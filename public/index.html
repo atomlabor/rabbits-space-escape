@@ -204,7 +204,7 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('Click to Start', canvas.width / 2, canvas.height - 30);
+                ctx.fillText('click to start', canvas.width / 2, canvas.height - 30);
                 
             } else if (gameState === 'playing') {
                 // Draw player
@@ -231,16 +231,16 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'left';
-                ctx.fillText('Score: ' + Math.floor(score / 10), 10, 20);
+                ctx.fillText('score: ' + Math.floor(score / 10), 10, 20);
                 
             } else if (gameState === 'gameover') {
                 ctx.fillStyle = '#fff';
                 ctx.font = '20px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.fillText('game over!', canvas.width / 2, canvas.height / 2 - 20);
                 ctx.font = '14px Arial';
-                ctx.fillText('Score: ' + Math.floor(score / 10), canvas.width / 2, canvas.height / 2 + 10);
-                ctx.fillText('Click to Play Again', canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText('score: ' + Math.floor(score / 10), canvas.width / 2, canvas.height / 2 + 10);
+                ctx.fillText('click to play again', canvas.width / 2, canvas.height / 2 + 40);
             }
         }
 
