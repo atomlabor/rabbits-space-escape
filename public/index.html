@@ -214,9 +214,7 @@
             } else if (gameState === 'playing') {
                 // Draw player
                 const shipImg = player.direction === 'left' ? images.spaceshipLeft : images.spaceshipRight;
-                if (shipImg.complete) {
                     ctx.drawImage(shipImg, player.x, player.y, player.width, player.height);
-                }
                 
                 // Draw obstacles
                             obstacles.forEach(obs => {
