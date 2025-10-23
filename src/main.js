@@ -1,37 +1,38 @@
 /* Rabbits Space Escape - Complete Game
-   Optimized for Rabbit R1 (240x282), no placeholders */
+   Optimized for Rabbit R1 (1024x768), no placeholders */
 
 // Canvas setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 240;
-canvas.height = 282;
+canvas.width = 1024;
+canvas.height = 768;
 
 // Asset loading
 const shipLeft = new Image();
-shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png
+shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
 const shipRight = new Image();
-shipRight.src = ./assets/spaceship-right.png
+shipRight.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png';
 const splashImage = new Image();
-splashImage.src = ./assets/rabbit.png
+splashImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png';
 const carrotImage = new Image();
-carrotImage.src = ./assets/carrot-1.png
+carrotImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-1.png';
 const backgroundImage = new Image();
-backgroundImage.src = ./assets/background.jpg
+backgroundImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/background.jpg';
 const gameOverImage = new Image();
 gameOverImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spacecraft.gif';
 
-// Background music
-const bgMusic = new Audio();
-bgMusic.src = ./assets/rabbit_pixel_dust.mp3
-bgMusic.loop = true;
-bgMusic.volume = 0.5;
+// Sounds
+const bgMusic = document.getElementById('game-music');
+const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
+const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
 
 // Game state
 const state = {
   splashScreen: true,
   started: false,
   gameOver: false,
+  exploding: false,
+  explosionFrame: 0,
   score: 0,
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
 };
@@ -59,16 +60,10 @@ const keys = {};
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
   
-  // Start game on any key during splash
-  if (state.splashScreen) {
+  if (state.splashScreen && e.key === ' ') {
     state.splashScreen = false;
     state.started = true;
-         bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
-  }
-  
-  // Restart on Enter after game over
-  if (state.gameOver && e.key === 'Enter') {
-    resetGame();
+    bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
   }
 });
 
@@ -76,161 +71,157 @@ window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
 });
 
-// Mouse/Touch for splash screen
+// Mouse click for splash
 canvas.addEventListener('click', () => {
   if (state.splashScreen) {
     state.splashScreen = false;
     state.started = true;
-  
-          bgMusic.play().catch(e => console.log('Audio autoplay prevented'));}
+    bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
+  }
 });
 
-// Generate carrots
+// Spawn carrot
 function spawnCarrot() {
-  if (Math.random() < 0.02) {
-    carrots.push({
-      x: canvas.width,
-      y: Math.random() * (canvas.height - 20),
-      width: 20,
-      height: 20,
-      speed: 2,
-    });
-  }
+  carrots.push({
+    x: Math.random() * (canvas.width - 20),
+    y: Math.random() * (canvas.height - 20),
+    width: 20,
+    height: 20,
+  });
 }
 
-// Generate obstacles
+// Spawn obstacle
 function spawnObstacle() {
-  if (Math.random() < 0.015) {
-    const height = 30 + Math.random() * 40;
-    obstacles.push({
-      x: canvas.width,
-      y: Math.random() * (canvas.height - height),
-      width: 25,
-      height: height,
-      speed: 2.5,
-    });
-  }
+  const width = 30 + Math.random() * 50;
+  const height = 30 + Math.random() * 50;
+  obstacles.push({
+    x: Math.random() * (canvas.width - width),
+    y: Math.random() * (canvas.height - height),
+    width,
+    height,
+  });
 }
 
-// Collision detection
-function checkCollision(obj1, obj2) {
-  return (
-    obj1.x < obj2.x + obj2.width &&
-    obj1.x + obj1.width > obj2.x &&
-    obj1.y < obj2.y + obj2.height &&
-    obj1.y + obj1.height > obj2.y
-  );
-}
+// Initialize game
+for (let i = 0; i < 5; i++) spawnCarrot();
+for (let i = 0; i < 3; i++) spawnObstacle();
 
-// Update game state
+// Update
 function update() {
   if (state.splashScreen || state.gameOver) return;
-
-  // Player movement
-  if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-    player.velocityX = -3;
-    player.direction = 'left';
-  } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-    player.velocityX = 3;
-    player.direction = 'right';
-  } else {
-    player.velocityX *= 0.9;
+  
+  // Movement and direction change
+  let directionChanged = false;
+  if (keys['ArrowLeft'] || keys['a']) {
+    player.velocityX -= 0.3;
+    if (player.direction !== 'left') {
+      player.direction = 'left';
+      directionChanged = true;
+    }
   }
-
-  // Thrust (up movement)
-  if (keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' ']) {
+  if (keys['ArrowRight'] || keys['d']) {
+    player.velocityX += 0.3;
+    if (player.direction !== 'right') {
+      player.direction = 'right';
+      directionChanged = true;
+    }
+  }
+  if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
     player.velocityY += player.thrust;
   }
-
-  // Apply gravity
+  
+  // Play swoosh on direction change
+  if (directionChanged) {
+    swooshSound.currentTime = 0;
+    swooshSound.play().catch(e => console.log('Swoosh blocked'));
+  }
+  
+  // Gravity
   player.velocityY += player.gravity;
-
-  // Update position
+  
+  // Apply velocity
   player.x += player.velocityX;
   player.y += player.velocityY;
-
-  // Boundary checks
-  if (player.x < 0) player.x = 0;
-  if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-  if (player.y < 0) player.y = 0;
-  if (player.y + player.height > canvas.height) {
-    player.y = canvas.height - player.height;
-    player.velocityY = 0;
+  
+  // Friction
+  player.velocityX *= 0.98;
+  player.velocityY *= 0.98;
+  
+  // Wall collision - EXPLOSION
+  if (player.x <= 0 || player.x + player.width >= canvas.width ||
+      player.y <= 0 || player.y + player.height >= canvas.height) {
+    if (!state.exploding) {
+      state.exploding = true;
+      state.explosionFrame = 0;
+      explosionSound.play().catch(e => console.log('Explosion blocked'));
+      setTimeout(gameOver, 500);
+    }
   }
-
-  // Spawn and update carrots
-  spawnCarrot();
-  for (let i = carrots.length - 1; i >= 0; i--) {
-    carrots[i].x -= carrots[i].speed;
-
-    // Check collision with player
-    if (checkCollision(player, carrots[i])) {
+  
+  // Carrot collection
+  carrots.forEach((carrot, i) => {
+    if (player.x < carrot.x + carrot.width &&
+        player.x + player.width > carrot.x &&
+        player.y < carrot.y + carrot.height &&
+        player.y + player.height > carrot.y) {
+      carrots.splice(i, 1);
       state.score += 100;
-      carrots.splice(i, 1);
-      continue;
+      spawnCarrot();
     }
-
-    // Remove off-screen carrots
-    if (carrots[i].x + carrots[i].width < 0) {
-      carrots.splice(i, 1);
+  });
+  
+  // Obstacle collision
+  obstacles.forEach(obs => {
+    if (player.x < obs.x + obs.width &&
+        player.x + player.width > obs.x &&
+        player.y < obs.y + obs.height &&
+        player.y + player.height > obs.y) {
+      if (!state.exploding) {
+        state.exploding = true;
+        state.explosionFrame = 0;
+        explosionSound.play().catch(e => console.log('Explosion blocked'));
+        setTimeout(gameOver, 500);
+      }
     }
-  }
-
-  // Spawn and update obstacles
-  spawnObstacle();
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    obstacles[i].x -= obstacles[i].speed;
-
-    // Check collision with player
-    if (checkCollision(player, obstacles[i])) {
-      gameOver();
-      return;
-    }
-
-    // Remove off-screen obstacles
-    if (obstacles[i].x + obstacles[i].width < 0) {
-      obstacles.splice(i, 1);
-    }
-  }
-
-  // Increment score over time
-  state.score += 0.1;
+  });
 }
 
-// Draw everything
+// Draw
 function draw() {
-  // Clear canvas
-  // Draw background
+  // Background
   if (backgroundImage.complete) {
     ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-
+  
   // Splash screen
   if (state.splashScreen) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     if (splashImage.complete) {
-      const scale = Math.min(canvas.width / splashImage.width, canvas.height / splashImage.height) * 0.8;
-      const w = splashImage.width * scale;
-      const h = splashImage.height * scale;
-      ctx.drawImage(splashImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+      const size = 300;
+      ctx.drawImage(splashImage, 
+        canvas.width / 2 - size / 2, 
+        canvas.height / 2 - size / 2 - 50, 
+        size, size);
     }
+    
     ctx.fillStyle = '#fff';
-    ctx.font = '14px Arial';
+    ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('Click or press any key to start', canvas.width / 2, canvas.height - 30);
+    ctx.fillText("Rabbit's Space Escape", canvas.width / 2, canvas.height / 2 + 200);
+    ctx.font = '24px Arial';
+    ctx.fillText('Klick oder Leertaste zum Starten', canvas.width / 2, canvas.height / 2 + 250);
     return;
   }
-
-  // Draw player (spaceship)
-  const shipImage = player.direction === 'left' ? shipLeft : shipRight;
-  if (shipImage.complete) {
-    ctx.drawImage(shipImage, player.x, player.y, player.width, player.height);
-  } else {
-    ctx.fillStyle = '#0f0';
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-  }
-
-  // Draw carrots
-  carrots.forEach((carrot) => {
+  
+  if (!state.started) return;
+  
+  // Carrots
+  carrots.forEach(carrot => {
     if (carrotImage.complete) {
       ctx.drawImage(carrotImage, carrot.x, carrot.y, carrot.width, carrot.height);
     } else {
@@ -238,39 +229,59 @@ function draw() {
       ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
     }
   });
-
-  // Draw obstacles
-  ctx.fillStyle = '#f00';
-  obstacles.forEach((obstacle) => {
-    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  
+  // Obstacles
+  ctx.fillStyle = '#666';
+  obstacles.forEach(obs => {
+    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
   });
-
-  // Draw score
-  ctx.fillStyle = '#fff';
-  ctx.font = '16px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText(`Score: ${Math.floor(state.score)}`, 10, 25);
-  ctx.fillText(`High: ${Math.floor(state.highScore)}`, 10, 45);
-
-  // Game over screen
-  if (state.gameOver) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-         // Draw game over image
-    if (gameOverImage.complete) {
-      const scale = Math.min(canvas.width / gameOverImage.width, canvas.height / gameOverImage.height) * 0.5;
-      const w = gameOverImage.width * scale;
-      const h = gameOverImage.height * scale;
-      ctx.drawImage(gameOverImage, (canvas.width - w) / 2, (canvas.height - h) / 2 - 30, w, h);
+  
+  // Player or explosion
+  if (state.exploding) {
+    // Simple explosion effect
+    ctx.fillStyle = `rgba(255, ${100 + state.explosionFrame * 30}, 0, ${1 - state.explosionFrame * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 20 + state.explosionFrame * 10, 0, Math.PI * 2);
+    ctx.fill();
+    state.explosionFrame++;
+  } else {
+    const shipImg = player.direction === 'left' ? shipLeft : shipRight;
+    if (shipImg.complete) {
+      ctx.drawImage(shipImg, player.x, player.y, player.width, player.height);
+    } else {
+      ctx.fillStyle = '#0ff';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
     }
+  }
+  
+  // Score
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 24px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Score: ${state.score}`, 20, 40);
+  ctx.fillText(`High: ${state.highScore}`, 20, 70);
+  
+  // Game over
+  if (state.gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    if (gameOverImage.complete) {
+      const size = 200;
+      ctx.drawImage(gameOverImage,
+        canvas.width / 2 - size / 2,
+        canvas.height / 2 - size / 2 - 80,
+        size, size);
+    }
+    
     ctx.fillStyle = '#fff';
-    ctx.font = '24px Arial';
+    ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 30);
-    ctx.font = '16px Arial';
-    ctx.fillText(`Final Score: ${Math.floor(state.score)}`, canvas.width / 2, canvas.height / 2);
-    ctx.fillText(`High Score: ${Math.floor(state.highScore)}`, canvas.width / 2, canvas.height / 2 + 25);
-    ctx.fillText('Press ENTER to restart', canvas.width / 2, canvas.height / 2 + 55);
+    ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 + 100);
+    ctx.font = '32px Arial';
+    ctx.fillText(`Score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 150);
+    ctx.font = '24px Arial';
+    ctx.fillText('F5 zum Neustarten', canvas.width / 2, canvas.height / 2 + 200);
   }
 }
 
@@ -286,6 +297,8 @@ function gameOver() {
 // Reset game
 function resetGame() {
   state.gameOver = false;
+  state.exploding = false;
+  state.explosionFrame = 0;
   state.score = 0;
   player.x = canvas.width / 2 - 15;
   player.y = canvas.height / 2;
@@ -294,6 +307,8 @@ function resetGame() {
   player.direction = 'right';
   carrots.length = 0;
   obstacles.length = 0;
+  for (let i = 0; i < 5; i++) spawnCarrot();
+  for (let i = 0; i < 3; i++) spawnObstacle();
 }
 
 // Game loop
@@ -303,5 +318,4 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// Start game
 gameLoop();
