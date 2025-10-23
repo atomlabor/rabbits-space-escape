@@ -33,6 +33,10 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+              - name: Copy assets and src to public
+        run: |
+          cp -r assets public/
+          cp -r src public/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
