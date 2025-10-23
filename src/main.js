@@ -198,9 +198,6 @@ function update() {
 // Draw everything
 function draw() {
   // Clear canvas
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-   
   // Draw background
   if (backgroundImage.complete) {
     ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
