@@ -16,6 +16,14 @@ const splashImage = new Image();
 splashImage.src = '/rabbits-space-escape/assets/rabbit.png';
 const carrotImage = new Image();
 carrotImage.src = '/rabbits-space-escape/assets/carrot-1.png';
+const backgroundImage = new Image();
+backgroundImage.src = '/rabbits-space-escape/assets/background.jpg';
+
+// Background music
+const bgMusic = new Audio();
+bgMusic.src = '/rabbits-space-escape/assets/rabbit_pixel_dust.mp3';
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
 
 // Game state
 const state = {
@@ -53,6 +61,7 @@ window.addEventListener('keydown', (e) => {
   if (state.splashScreen) {
     state.splashScreen = false;
     state.started = true;
+         bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
   }
   
   // Restart on Enter after game over
@@ -74,6 +83,7 @@ canvas.addEventListener('click', () => {
 });
 
 // Generate carrots
+    bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
 function spawnCarrot() {
   if (Math.random() < 0.02) {
     carrots.push({
@@ -190,6 +200,11 @@ function draw() {
   // Clear canvas
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+   
+  // Draw background
+  if (backgroundImage.complete) {
+    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+  }
 
   // Splash screen
   if (state.splashScreen) {
