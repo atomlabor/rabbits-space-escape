@@ -9,19 +9,21 @@ canvas.height = 282;
 
 // Asset loading
 const shipLeft = new Image();
-shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png
+shipLeft.src = './assets/spaceship-left.png
 const shipRight = new Image();
-shipRight.src = https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png
+shipRight.src = ./assets/spaceship-right.png
 const splashImage = new Image();
-splashImage.src = https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png
+splashImage.src = ./assets/rabbit.png
 const carrotImage = new Image();
-carrotImage.src = https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-1.png
+carrotImage.src = ./assets/carrot-1.png
 const backgroundImage = new Image();
-backgroundImage.src = https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/background.jpg
+backgroundImage.src = ./assets/background.jpg
+const gameOverImage = new Image();
+gameOverImage.src = './assets/spacecraft.gif';
 
 // Background music
 const bgMusic = new Audio();
-bgMusic.src = https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit_pixel_dust.mp3
+bgMusic.src = ./assets/rabbit_pixel_dust.mp3
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
 
@@ -254,6 +256,13 @@ function draw() {
   if (state.gameOver) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+         // Draw game over image
+    if (gameOverImage.complete) {
+      const scale = Math.min(canvas.width / gameOverImage.width, canvas.height / gameOverImage.height) * 0.5;
+      const w = gameOverImage.width * scale;
+      const h = gameOverImage.height * scale;
+      ctx.drawImage(gameOverImage, (canvas.width - w) / 2, (canvas.height - h) / 2 - 30, w, h);
+    }
     ctx.fillStyle = '#fff';
     ctx.font = '24px Arial';
     ctx.textAlign = 'center';
