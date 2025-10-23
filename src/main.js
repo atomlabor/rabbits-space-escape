@@ -9,19 +9,19 @@ canvas.height = 282;
 
 // Asset loading
 const shipLeft = new Image();
-shipLeft.src = '/rabbits-space-escape/assets/spaceship-left.png';
+shipLeft.src = '../assets/spaceship-left.png
 const shipRight = new Image();
-shipRight.src = '/rabbits-space-escape/assets/spaceship-right.png';
+shipRight.src = ../assets/spaceship-right.png
 const splashImage = new Image();
-splashImage.src = '/rabbits-space-escape/assets/rabbit.png';
+splashImage.src = ../assets/rabbit.png
 const carrotImage = new Image();
-carrotImage.src = '/rabbits-space-escape/assets/carrot-1.png';
+carrotImage.src = ../assets/carrot-1.png
 const backgroundImage = new Image();
-backgroundImage.src = '/rabbits-space-escape/assets/background.jpg';
+backgroundImage.src = ../assets/background.jpg
 
 // Background music
 const bgMusic = new Audio();
-bgMusic.src = '/rabbits-space-escape/assets/rabbit_pixel_dust.mp3';
+bgMusic.src = ../assets/rabbit_pixel_dust.mp3
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
 
