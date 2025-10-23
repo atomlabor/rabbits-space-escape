@@ -36,8 +36,7 @@ jobs:
               - name: Copy assets and src to public
         run: |
           cp -r assets public/
-          cp -r src public/
-      - name: Upload artifact
+                    cp -r src public/
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload public directory
