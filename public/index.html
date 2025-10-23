@@ -82,7 +82,8 @@
             if (gameState === 'splash') {
                 gameState = 'playing';
             }
-        });
+        240
+            
         
         window.addEventListener('keyup', (e) => {
             keys[e.key] = false;
@@ -237,7 +238,6 @@
                                 const carrotImg = Math.random() > 0.5 ? images.carrot1 : images.carrot2;
                                 ctx.drawImage(carrotImg, star.x - star.size, star.y - star.size, star.size * 2, star.size * 2);
                             });
-                });
                 ctx.fillStyle = '#fff';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'left';
