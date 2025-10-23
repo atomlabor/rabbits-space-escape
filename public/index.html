@@ -53,8 +53,14 @@
         
         images.rabbit.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png';
         images.spaceshipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
+                    wall1: new Image(),
+            wall2: new Image(),
+            wall3: new Image()
         images.spaceshipRight.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png';
         
+        images.wall1.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall.png';
+        images.wall2.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall2.png';
+        images.wall3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall3.png';
         // Obstacles
         let obstacles = [];
         let obstacleTimer = 0;
@@ -137,7 +143,8 @@
                         y: Math.random() * (canvas.height - 40),
                         width: 20,
                         height: 40,
-                        speed: 2
+                        speed: 2,
+                    wallType: Math.floor(Math.random() * 3) + 1
                     });
                     obstacleTimer = 0;
                 }
@@ -214,10 +221,9 @@
                 }
                 
                 // Draw obstacles
-                ctx.fillStyle = '#f00';
-                obstacles.forEach(obs => {
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                });
+                            obstacles.forEach(obs => {
+                    const wallImage = obs.wallType === 1 ? images.wall1 : obs.wallType === 2 ? images.wall2 : images.wall3;
+                    ctx.drawImage(wallImage, obs.x, obs.y, obs.width, obs.height);});
                 
                 // Draw stars
                 ctx.fillStyle = '#ff0';
