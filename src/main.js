@@ -15,7 +15,7 @@ shipRight.src = '/rabbits-space-escape/assets/spaceship-right.png';
 const splashImage = new Image();
 splashImage.src = '/rabbits-space-escape/assets/rabbit.png';
 const carrotImage = new Image();
-carrotImage.src = '/rabbits-space-escape/assets/carrot.png';
+carrotImage.src = '/rabbits-space-escape/assets/carrot-1.png';
 
 // Game state
 const state = {
@@ -153,7 +153,7 @@ function update() {
 
     // Check collision with player
     if (checkCollision(player, carrots[i])) {
-      state.score += 10;
+      state.score += 100;
       carrots.splice(i, 1);
       continue;
     }
