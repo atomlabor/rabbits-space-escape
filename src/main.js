@@ -1,11 +1,11 @@
 // Rabbit's Space Escape - Main Game Script
-// Optimiert für Rabbit r1 (240x282px)
+// Optimised for Rabbit r1 (240x282px)
 
-// Canvas initialisieren
+// Initialise canvas
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Spieler-Objekt (Hase)
+// Player object (rabbit)
 const rabbit = {
     x: 120,
     y: 141,
@@ -16,48 +16,48 @@ const rabbit = {
     color: '#FFF'
 };
 
-// Physik-Konstanten
+// Physics constants
 const GRAVITY_SCALE = 0.5;
 const DAMPING = 0.95;
 const MAX_VELOCITY = 5;
 
-// Beschleunigungssensor-Daten
+// Acceleration sensor data
 let gravityX = 0;
 let gravityY = 0;
 
-// Gravity-Steuerung per Beschleunigungssensor
+// Gravity control via acceleration sensor
 if (window.DeviceMotionEvent) {
     window.addEventListener('devicemotion', function(event) {
         if (event.accelerationIncludingGravity) {
-            // X-Achse: Links/Rechts (invertiert für natürliche Steuerung)
+            // X-axis: Left/Right (inverted for natural control)
             gravityX = -event.accelerationIncludingGravity.x * GRAVITY_SCALE;
-            // Y-Achse: Oben/Unten
+            // Y-axis: Up/Down
             gravityY = event.accelerationIncludingGravity.y * GRAVITY_SCALE;
         }
     });
 } else {
-    console.log('DeviceMotion API nicht verfügbar');
+    console.log('DeviceMotion API not available');
 }
 
-// Spieler bewegen basierend auf Beschleunigung
+// Update player based on acceleration
 function updateRabbit() {
-    // Geschwindigkeit durch Gravity anpassen
+    // Adjust velocity by gravity
     rabbit.velocityX += gravityX;
     rabbit.velocityY += gravityY;
     
-    // Geschwindigkeit begrenzen
+    // Limit velocity
     rabbit.velocityX = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, rabbit.velocityX));
     rabbit.velocityY = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, rabbit.velocityY));
     
-    // Dämpfung anwenden
+    // Apply damping
     rabbit.velocityX *= DAMPING;
     rabbit.velocityY *= DAMPING;
     
-    // Position aktualisieren
+    // Update position
     rabbit.x += rabbit.velocityX;
     rabbit.y += rabbit.velocityY;
     
-    // Grenzen prüfen (Wände)
+    // Check boundaries (walls)
     if (rabbit.x < 0) {
         rabbit.x = 0;
         rabbit.velocityX = 0;
@@ -76,27 +76,27 @@ function updateRabbit() {
     }
 }
 
-// Zeichne Spieler
+// Draw player
 function drawRabbit() {
     ctx.fillStyle = rabbit.color;
     ctx.fillRect(rabbit.x, rabbit.y, rabbit.width, rabbit.height);
 }
 
-// Hauptspiel-Loop
+// Main game loop
 function gameLoop() {
-    // Canvas leeren
+    // Clear canvas
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Spieler aktualisieren und zeichnen
+    // Update and draw player
     updateRabbit();
     drawRabbit();
     
-    // Nächsten Frame anfordern
+    // Request next frame
     requestAnimationFrame(gameLoop);
 }
 
-// Spiel starten
+// Start game
 gameLoop();
 
-console.log('Rabbit\'s Space Escape gestartet - Bewege dein Gerät!');
+console.log('Rabbit\'s Space Escape started - Move your device!');
