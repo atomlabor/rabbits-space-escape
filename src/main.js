@@ -79,11 +79,11 @@ canvas.addEventListener('click', () => {
   if (state.splashScreen) {
     state.splashScreen = false;
     state.started = true;
-  }
+  
+          bgMusic.play().catch(e => console.log('Audio autoplay prevented'));}
 });
 
 // Generate carrots
-    bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
 function spawnCarrot() {
   if (Math.random() < 0.02) {
     carrots.push({
