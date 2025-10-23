@@ -81,11 +81,17 @@
             if (gameState === 'splash') {
                 gameState = 'playing';
             }
+                        if (gameState === 'gameover') {
+                resetGame();
+            }
         });
         
         canvas.addEventListener('touchstart', () => {
             if (gameState === 'splash') {
                 gameState = 'playing';
+            }
+                        if (gameState === 'gameover') {
+                resetGame();
             }
         });
         
@@ -234,8 +240,21 @@
                 ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 20);
                 ctx.font = '14px Arial';
                 ctx.fillText('Score: ' + Math.floor(score / 10), canvas.width / 2, canvas.height / 2 + 10);
-                ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText('Click to Play Again', canvas.width / 2, canvas.height / 2 + 40);
             }
+        }
+
+                function resetGame() {
+            gameState = 'playing';
+            score = 0;
+            player.x = 60;
+            player.y = 141;
+            player.velocityY = 0;
+            player.velocityX = 0;
+            obstacles = [];
+            stars = [];
+            obstacleTimer = 0;
+            starTimer = 0;
         }
         
         function gameLoop() {
