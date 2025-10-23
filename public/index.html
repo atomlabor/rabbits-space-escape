@@ -52,14 +52,20 @@
                     wall1: new Image(),
                     wall2: new Image(),
                     wall3: new Image()
+                    background: new Image(),
+                    carrot1: new Image(),
+                    carrot2: new Image()
         };
         
         images.rabbit.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png';
-        images.spaceshipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
+        images.spaceshipLeft.src = 'ht
         images.spaceshipRight.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png';
         images.wall1.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall.png';
         images.wall2.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall2.png';
         images.wall3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall3.png';
+        images.background.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/background.jpg';
+        images.carrot1.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-1.png';
+        images.carrot2.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-2.png';
         // Obstacles
         let obstacles = [];
         let obstacleTimer = 0;
@@ -201,6 +207,10 @@
             if (gameState === 'splash') {
                 // Draw splash screen
                 if (images.rabbit.complete) {
+                            // Draw background with dimming
+                            ctx.drawImage(images.background, 0, 0, canvas.width, canvas.height);
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
                     const scale = Math.min(canvas.width / images.rabbit.width, canvas.height / images.rabbit.height) * 0.8;
                     const w = images.rabbit.width * scale;
                     const h = images.rabbit.height * scale;
@@ -223,14 +233,11 @@
                     ctx.drawImage(wallImage, obs.x, obs.y, obs.width, obs.height);});
                 
                 // Draw stars
-                ctx.fillStyle = '#ff0';
                 stars.forEach(star => {
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                    ctx.fill();
+                                const carrotImg = Math.random() > 0.5 ? images.carrot1 : images.carrot2;
+                                ctx.drawImage(carrotImg, star.x - star.size, star.y - star.size, star.size * 2, star.size * 2);
+                            });
                 });
-                
-                // Draw score
                 ctx.fillStyle = '#fff';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'left';
