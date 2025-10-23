@@ -9,7 +9,7 @@ canvas.height = 282;
 
 // Asset loading
 const shipLeft = new Image();
-shipLeft.src = '../assets/spaceship-left.png
+shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png
 const shipRight = new Image();
 shipRight.src = ./assets/spaceship-right.png
 const splashImage = new Image();
@@ -19,7 +19,7 @@ carrotImage.src = ./assets/carrot-1.png
 const backgroundImage = new Image();
 backgroundImage.src = ./assets/background.jpg
 const gameOverImage = new Image();
-gameOverImage.src = '../assets/spacecraft.gif';
+gameOverImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spacecraft.gif';
 
 // Background music
 const bgMusic = new Audio();
