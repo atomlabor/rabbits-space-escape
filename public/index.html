@@ -22,6 +22,230 @@
 </head>
 <body>
     <canvas id="gameCanvas" width="240" height="282"></canvas>
-    <script src="src/main.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameState = 'splash'; // splash, playing, gameover
+        let score = 0;
+        
+        // Player
+        const player = {
+            x: 60,
+            y: 141,
+            width: 32,
+            height: 24,
+            velocityY: 0,
+            velocityX: 0,
+            direction: 'right',
+            gravity: 0.3,
+            thrust: -0.8,
+            horizontalSpeed: 2
+        };
+        
+        // Images
+        const images = {
+            rabbit: new Image(),
+            spaceshipLeft: new Image(),
+            spaceshipRight: new Image()
+        };
+        
+        images.rabbit.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png';
+        images.spaceshipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
+        images.spaceshipRight.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png';
+        
+        // Obstacles
+        let obstacles = [];
+        let obstacleTimer = 0;
+        
+        // Stars
+        let stars = [];
+        let starTimer = 0;
+        
+        // Input handling
+        const keys = {};
+        
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (gameState === 'splash') {
+                gameState = 'playing';
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if (gameState === 'splash') {
+                gameState = 'playing';
+            }
+        });
+        
+        canvas.addEventListener('touchstart', () => {
+            if (gameState === 'splash') {
+                gameState = 'playing';
+            }
+        });
+        
+        // Game loop
+        function update() {
+            if (gameState === 'playing') {
+                // Apply gravity
+                player.velocityY += player.gravity;
+                
+                // Handle input
+                if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
+                    player.velocityY += player.thrust;
+                }
+                
+                if (keys['ArrowLeft'] || keys['a']) {
+                    player.velocityX = -player.horizontalSpeed;
+                    player.direction = 'left';
+                } else if (keys['ArrowRight'] || keys['d']) {
+                    player.velocityX = player.horizontalSpeed;
+                    player.direction = 'right';
+                } else {
+                    player.velocityX = 0;
+                }
+                
+                // Update position
+                player.y += player.velocityY;
+                player.x += player.velocityX;
+                
+                // Boundaries
+                if (player.y < 0) player.y = 0;
+                if (player.y + player.height > canvas.height) {
+                    player.y = canvas.height - player.height;
+                    player.velocityY = 0;
+                }
+                if (player.x < 0) player.x = 0;
+                if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+                
+                // Generate obstacles
+                obstacleTimer++;
+                if (obstacleTimer > 90) {
+                    obstacles.push({
+                        x: canvas.width,
+                        y: Math.random() * (canvas.height - 40),
+                        width: 20,
+                        height: 40,
+                        speed: 2
+                    });
+                    obstacleTimer = 0;
+                }
+                
+                // Update obstacles
+                obstacles = obstacles.filter(obs => {
+                    obs.x -= obs.speed;
+                    
+                    // Collision detection
+                    if (obs.x < player.x + player.width &&
+                        obs.x + obs.width > player.x &&
+                        obs.y < player.y + player.height &&
+                        obs.y + obs.height > player.y) {
+                        gameState = 'gameover';
+                    }
+                    
+                    return obs.x + obs.width > 0;
+                });
+                
+                // Generate stars
+                starTimer++;
+                if (starTimer > 120) {
+                    stars.push({
+                        x: canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: 8,
+                        speed: 1.5
+                    });
+                    starTimer = 0;
+                }
+                
+                // Update stars
+                stars = stars.filter(star => {
+                    star.x -= star.speed;
+                    
+                    // Collision detection
+                    const dist = Math.hypot(star.x - (player.x + player.width/2), star.y - (player.y + player.height/2));
+                    if (dist < player.width/2 + star.size) {
+                        score += 10;
+                        return false;
+                    }
+                    
+                    return star.x + star.size > 0;
+                });
+                
+                score++;
+            }
+        }
+        
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (gameState === 'splash') {
+                // Draw splash screen
+                if (images.rabbit.complete) {
+                    const scale = Math.min(canvas.width / images.rabbit.width, canvas.height / images.rabbit.height) * 0.8;
+                    const w = images.rabbit.width * scale;
+                    const h = images.rabbit.height * scale;
+                    ctx.drawImage(images.rabbit, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                }
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Click to Start', canvas.width / 2, canvas.height - 30);
+                
+            } else if (gameState === 'playing') {
+                // Draw player
+                const shipImg = player.direction === 'left' ? images.spaceshipLeft : images.spaceshipRight;
+                if (shipImg.complete) {
+                    ctx.drawImage(shipImg, player.x, player.y, player.width, player.height);
+                }
+                
+                // Draw obstacles
+                ctx.fillStyle = '#f00';
+                obstacles.forEach(obs => {
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                });
+                
+                // Draw stars
+                ctx.fillStyle = '#ff0';
+                stars.forEach(star => {
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Draw score
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('Score: ' + Math.floor(score / 10), 10, 20);
+                
+            } else if (gameState === 'gameover') {
+                ctx.fillStyle = '#fff';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.font = '14px Arial';
+                ctx.fillText('Score: ' + Math.floor(score / 10), canvas.width / 2, canvas.height / 2 + 10);
+                ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 40);
+            }
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start game
+        gameLoop();
+    </script>
 </body>
 </html>
