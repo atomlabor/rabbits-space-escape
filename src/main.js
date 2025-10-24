@@ -44,11 +44,8 @@ endVideo.muted = false;
 endVideo.controls = false;
 endVideo.playsInline = true;
 
-// Canvas-Wrapper sichern
-const wrapEl = canvas.parentElement || document.body;
-if (getComputedStyle(wrapEl).position === 'static') wrapEl.style.position = 'relative';
+// Canvas-Wrapper wiederverwenden
 wrapEl.appendChild(endVideo);
-
 
 // asset loading
 const shipLeft = new Image();
@@ -146,7 +143,7 @@ const state = {
   score: 0,
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
   bgWarped: false,   // wurde der 2000er Warp schon ausgelöst?
-  speedBoosted: false // wurde der 3000er Speed-Boost schon ausgelöst?
+  speedBoosted: false, // wurde der 3000er Speed-Boost schon ausgelöst?
   endTriggered: false, // wurde das Endvideo bereits gestartet?
 
 
