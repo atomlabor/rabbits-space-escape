@@ -123,7 +123,9 @@ const state = {
   explosionFrame: 0,
   score: 0,
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
-  bgWarped: false // wurde der 2000er Warp schon ausgelöst?
+  bgWarped: false,   // wurde der 2000er Warp schon ausgelöst?
+  speedBoosted: false // wurde der 3000er Speed-Boost schon ausgelöst?
+
 };
 
 // player (spaceship)
@@ -322,7 +324,18 @@ if (!state.bgWarped && state.score >= 2000) {
   }, 700);
 }
 
+// Gegner-Geschwindigkeit ab 3000 Punkten einmalig erhöhen
+if (!state.speedBoosted && state.score >= 3000) {
+  state.speedBoosted = true;
 
+  obstacles.forEach(obs => {
+    obs.speedX *= 1.8; // einmaliger Geschwindigkeitsboost
+  });
+
+  console.log('Speed boost aktiviert!'); // optionales Debug-Log
+}
+
+   
   // Warp-Flash ausfaden lassen
   if (warpFX.active) {
     warpFX.alpha -= 0.05;
