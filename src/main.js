@@ -33,7 +33,6 @@ wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 let bgPattern = null;
 let bgOffsetX = 0;
 const bgScrollSpeed = 0.5;
-
 backgroundImage.onload = () => {
   bgPattern = ctx.createPattern(backgroundImage, 'repeat');
 };
@@ -86,7 +85,6 @@ window.addEventListener('keydown', (e) => {
     state.started = true;
     bgMusic.play().catch(e => console.log('audio autoplay prevented'));
   }
-  
   // keyboard tilt for desktop testing
   if (e.key === 'ArrowLeft' || e.key === 'a') {
     keyboardTilt = -1;
@@ -98,7 +96,6 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
-  
   // reset keyboard tilt
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ArrowRight' || e.key === 'd') {
     keyboardTilt = 0;
@@ -108,17 +105,14 @@ window.addEventListener('keyup', (e) => {
 // handle device orientation (gyroscope) for rabbit r1
 function handleGyro(event) {
   if (state.splashScreen || state.gameOver) return;
-  
   // gamma is left/right tilt (-90 to 90 degrees)
   let gamma = event.gamma || 0;
-  
   // clamp to max tilt degree
   if (gamma < -MAX_TILT_DEGREE) {
     gamma = -MAX_TILT_DEGREE;
   } else if (gamma > MAX_TILT_DEGREE) {
     gamma = MAX_TILT_DEGREE;
   }
-  
   // normalize to -1 to 1
   gyroTilt = gamma / MAX_TILT_DEGREE;
 }
@@ -152,7 +146,6 @@ function spawnObstacle() {
   const height = 20 + Math.random() * 30;
   const walls = [wallImage1, wallImage2, wallImage3];
   const wallImg = walls[Math.floor(Math.random() * 3)];
-  
   obstacles.push({
     x: Math.random() * (canvas.width - width),
     y: Math.random() * (canvas.height - height),
@@ -170,10 +163,10 @@ for (let i = 0; i < 3; i++) spawnObstacle();
 // update
 function update() {
   if (state.splashScreen || state.gameOver) return;
-
+  
   // scroll background
   bgOffsetX = (bgOffsetX + bgScrollSpeed) % (backgroundImage.width || 1024);
-
+  
   // combined tilt from gyro and keyboard
   const totalTilt = gyroTilt + keyboardTilt;
   
@@ -194,26 +187,26 @@ function update() {
   if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
     player.velocityY += player.thrust;
   }
-
+  
   // play swoosh on direction change
   if (directionChanged) {
     swooshSound.currentTime = 0;
     swooshSound.play().catch(e => console.log('swoosh blocked'));
   }
-
+  
   // gravity
   player.velocityY += player.gravity;
-
+  
   // apply velocity
   player.x += player.velocityX;
   player.y += player.velocityY;
-
+  
   // friction
   player.velocityX *= 0.98;
   player.velocityY *= 0.98;
-
+  
   // wall collision - explosion
-  if (player.x <= 0 || player.x + player.width >= canvas.width || 
+  if (player.x <= 0 || player.x + player.width >= canvas.width ||
       player.y <= 0 || player.y + player.height >= canvas.height) {
     if (!state.exploding) {
       state.exploding = true;
@@ -222,7 +215,7 @@ function update() {
       setTimeout(gameOver, 500);
     }
   }
-
+  
   // carrot collection
   carrots.forEach((carrot, i) => {
     if (player.x < carrot.x + carrot.width &&
@@ -234,7 +227,7 @@ function update() {
       spawnCarrot();
     }
   });
-
+  
   // obstacle collision
   obstacles.forEach(obs => {
     if (player.x < obs.x + obs.width &&
@@ -249,11 +242,10 @@ function update() {
       }
     }
   });
-
+  
   // move obstacles left (scrolling walls)
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].x -= obstacles[i].speedX;
-    
     // respawn if obstacle scrolled off screen
     if (obstacles[i].x + obstacles[i].width < 0) {
       obstacles.splice(i, 1);
@@ -277,26 +269,24 @@ function draw() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-
+  
   // splash screen
   if (state.splashScreen) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     if (splashImage.complete) {
       const size = 150;
       ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 10, size, size);
     }
-
     ctx.fillStyle = '#fff';
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('click to start', canvas.width / 2, canvas.height / 2 + 110);
     return;
   }
-
+  
   if (!state.started) return;
-
+  
   // carrots
   carrots.forEach(carrot => {
     if (carrotImage.complete) {
@@ -306,7 +296,7 @@ function draw() {
       ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
     }
   });
-
+  
   // obstacles with wall graphics
   obstacles.forEach(obs => {
     if (obs.wallImg && obs.wallImg.complete) {
@@ -316,7 +306,7 @@ function draw() {
       ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
     }
   });
-
+  
   // player or explosion
   if (state.exploding) {
     ctx.fillStyle = `rgba(255, ${100 + state.explosionFrame * 30}, 0, ${1 - state.explosionFrame * 0.2})`;
@@ -333,24 +323,22 @@ function draw() {
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
   }
-
+  
   // score
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 12px Arial';
   ctx.textAlign = 'left';
   ctx.fillText(`score: ${state.score}`, 5, 15);
   ctx.fillText(`high: ${state.highScore}`, 5, 30);
-
+  
   // game over
   if (state.gameOver) {
     ctx.fillStyle = 'rgba(0,0,0,0.8)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     if (gameOverImage.complete) {
       const size = 80;
       ctx.drawImage(gameOverImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 40, size, size);
     }
-
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
@@ -368,9 +356,8 @@ function gameOver() {
   if (state.score > state.highScore) {
     state.highScore = state.score;
     localStorage.setItem('rse:highScore', Math.floor(state.highScore));
-     }
-     }
-
+  }
+}
 
 // reset game
 function resetGame() {
@@ -378,13 +365,11 @@ function resetGame() {
   state.exploding = false;
   state.explosionFrame = 0;
   state.score = 0;
-
   player.x = canvas.width / 2 - 15;
   player.y = canvas.height / 2;
   player.velocityX = 0;
   player.velocityY = 0;
   player.direction = 'right';
-
   carrots.length = 0;
   obstacles.length = 0;
   for (let i = 0; i < 5; i++) spawnCarrot();
