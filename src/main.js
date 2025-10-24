@@ -46,7 +46,7 @@ const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/ra
 let gyroTilt = 0;
 let keyboardTilt = 0;
 const MAX_TILT_DEGREE = 20;
-const GYRO_SENSITIVITY = 0.5;
+const GYRO_SENSITIVITY = 0.15;
 
 // game state
 const state = {
