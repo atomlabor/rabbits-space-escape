@@ -14,8 +14,15 @@ const shipRight = new Image();
 shipRight.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png';
 const splashImage = new Image();
 splashImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png';
-const carrotImage = new Image();
-carrotImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-1.png';
+// carrot graphics
+const carrotImages = [
+  new Image(),
+  new Image()
+];
+
+carrotImages[0].src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-1.png';
+carrotImages[1].src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-2.png';
+
 const backgroundImage = new Image();
 backgroundImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/background.jpg';
 const gameOverImage = new Image();
@@ -212,18 +219,25 @@ canvas.addEventListener('click', () => {
 function spawnCarrot() {
   const x = Math.random() * (canvas.width - 25);
   const y = Math.random() * (canvas.height - 25);
+  const img = carrotImages[Math.floor(Math.random() * carrotImages.length)];
 
-  // Karotte hinzufügen
-  carrots.push({ x, y, width: 25, height: 25 });
+  carrots.push({
+    x,
+    y,
+    width: 25,
+    height: 25,
+    img
+  });
 
-  // Mini-Lichtblitz hinzufügen
+  // Optional: kleiner Lichtblitz falls du ihn schon drin hast
   spawnFlashes.push({
-    x: x + 12.5,    // Mittelpunkt
+    x: x + 12.5,
     y: y + 12.5,
     radius: 2,
     alpha: 1
   });
 }
+
 
 
 // spawn obstacle only off-screen right, then scroll left into view
@@ -437,15 +451,16 @@ spawnFlashes.forEach(f => {
 });
 
    
-  // Karotten
-  carrots.forEach(carrot => {
-    if (carrotImage.complete) {
-      ctx.drawImage(carrotImage, carrot.x, carrot.y, carrot.width, carrot.height);
-    } else {
-      ctx.fillStyle = '#ff8800';
-      ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
-    }
-  });
+// Karotten zeichnen
+carrots.forEach(carrot => {
+  if (carrot.img && carrot.img.complete) {
+    ctx.drawImage(carrot.img, carrot.x, carrot.y, carrot.width, carrot.height);
+  } else {
+    ctx.fillStyle = '#ff8800';
+    ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
+  }
+});
+
 
   // Hindernisse
   obstacles.forEach(obs => {
