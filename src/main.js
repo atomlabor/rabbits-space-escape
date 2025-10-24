@@ -41,12 +41,16 @@ wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 // background scrolling
 let bgPattern = null;
 let bgOffsetX = 0;
-let bgOffsetY = 0;          // neu
-const bgScrollSpeed = 0.15;
+let bgOffsetY = 0;                 // neu
+const baseBgSpeed = 0.15;
+let currentBgSpeed = baseBgSpeed;  // für kurzzeitige Boosts
 
 backgroundImage.onload = () => {
   bgPattern = ctx.createPattern(backgroundImage, 'repeat');
 };
+
+// Warp-Effekt
+const warpFX = { active: false, alpha: 0 };
 
 
 // sounds
@@ -92,7 +96,9 @@ const state = {
   explosionFrame: 0,
   score: 0,
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
+  bgWarped: false // neu: wurde der 2000er Warp schon ausgelöst?
 };
+
 
 // player (spaceship)
 const player = {
@@ -287,6 +293,38 @@ for (let i = spawnFlashes.length - 1; i >= 0; i--) {
 const bgWidth  = backgroundImage.width  || 1024;
 const bgHeight = backgroundImage.height || 1024;
 
+const t = performance.now();
+const scrollDirX = Math.sin(t / 800);
+const scrollDirY = Math.cos(t / 1000);
+
+bgOffsetX = ((bgOffsetX + currentBgSpeed * scrollDirX) % bgWidth  + bgWidth)  % bgWidth;
+bgOffsetY = ((bgOffsetY + currentBgSpeed * scrollDirY) % bgHeight + bgHeight) % bgHeight;
+
+// Warp bei 2000 Punkten einmalig auslösen
+if (!state.bgWarped && state.score >= 2000) {
+  state.bgWarped = true;
+
+  // hart zu einem anderen Bereich des Tiles springen
+  bgOffsetX = Math.floor(Math.random() * bgWidth);
+  bgOffsetY = Math.floor(Math.random() * bgHeight);
+
+  // kurzer visueller Flash + Speed-Boost
+  warpFX.active = true;
+  warpFX.alpha = 1;
+  currentBgSpeed = baseBgSpeed * 2.0;
+  setTimeout(() => { currentBgSpeed = baseBgSpeed; }, 700);
+}
+
+// Warp-Flash ausfaden lassen
+if (warpFX.active) {
+  warpFX.alpha -= 0.05;
+  if (warpFX.alpha <= 0) {
+    warpFX.alpha = 0;
+    warpFX.active = false;
+  }
+}
+
+
 // sanfte Richtungsänderung über Zeit
 const t = performance.now();
 const scrollDirX = Math.sin(t / 800);   // horizontaler Drift
@@ -403,12 +441,8 @@ if (bgPattern) {
   const bgHeight = backgroundImage.height || 1024;
 
   ctx.save();
-  // Offsets anwenden
   ctx.translate(-bgOffsetX, -bgOffsetY);
   ctx.fillStyle = bgPattern;
-
-  // größer als Canvas zeichnen, damit das komplette Image sauber kachelt
-  // und keine Ränder sichtbar werden
   ctx.fillRect(0, 0, canvas.width + bgWidth, canvas.height + bgHeight);
   ctx.restore();
 } else if (backgroundImage.complete) {
@@ -417,6 +451,16 @@ if (bgPattern) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
+
+// Warp-Flash Overlay
+if (warpFX.active && warpFX.alpha > 0) {
+  ctx.save();
+  ctx.globalAlpha = Math.min(0.6, warpFX.alpha * 0.6);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+}
+
 
 
   // Splash
@@ -549,6 +593,11 @@ function resetGame() {
   for (let i = 0; i < 5; i++) spawnCarrot();
   for (let i = 0; i < 3; i++) spawnObstacle();
   calibrateNeutral();
+state.bgWarped = false;
+warpFX.active = false;
+warpFX.alpha = 0;
+currentBgSpeed = baseBgSpeed;
+
 }
 
 // game loop
