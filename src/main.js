@@ -43,7 +43,7 @@ const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbi
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
 
 // -------- Gyro-Konfiguration zweiachsig --------
-const MAX_TILT_DEGREE = 45;         // sinnvoller Neigungsbereich pro Achse
+const MAX_TILT_DEGREE = 20;         // sinnvoller Neigungsbereich pro Achse
 let   DEADZONE = 0.06;              // kleine Wackler filtern
 let   SMOOTHING = 0.15;             // 0..1, höher reagiert schneller
 const GYRO_SENSITIVITY_X = 0.18;    // Einfluss auf horizontale Beschleunigung
@@ -86,11 +86,11 @@ const state = {
 const player = {
   x: canvas.width / 2 - 15,
   y: canvas.height / 2,
-  width: 20,
-  height: 20,
+  width: 30,
+  height: 30,
   velocityX: 0,
   velocityY: 0,
-  gravity: 0.55,
+  gravity: 0.10,
   thrust: -0.5,
   direction: 'right',
 };
