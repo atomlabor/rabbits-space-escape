@@ -228,18 +228,25 @@ canvas.addEventListener('click', () => {
   }
 });
 
-// spawn carrot (mit Flash + random Image)
+// spawn carrot (mit Flash + random Image + Sound)
+const spawnSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spawn.mp3');
+
 function spawnCarrot() {
   const size = 25;
-  const x = Math.random() * (canvas.width  - size);
+  const x = Math.random() * (canvas.width - size);
   const y = Math.random() * (canvas.height - size);
   const img = carrotImages[Math.floor(Math.random() * carrotImages.length)];
 
   carrots.push({ x, y, width: size, height: size, img });
 
   // Mini-Lichtblitz
-  spawnFlashes.push({ x: x + size/2, y: y + size/2, radius: 2, alpha: 1 });
+  spawnFlashes.push({ x: x + size / 2, y: y + size / 2, radius: 2, alpha: 1 });
+
+  // Spawn-Sound abspielen
+  spawnSound.currentTime = 0; // zurücksetzen, falls mehrere schnell spawnen
+  spawnSound.play().catch(() => {}); // Catch vermeidet Browser-Warnungen
 }
+
 
 // spawn obstacle only off-screen right, then scroll left into view
 function spawnObstacle() {
