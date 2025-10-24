@@ -436,8 +436,8 @@ function draw() {
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('click to start', canvas.width / 2, canvas.height / 2 + 110);
-    ctx.font = '10px monospace';
-    ctx.fillText('atomlabor.de', canvas.width / 2, canvas.height / 2 + 126);
+    ctx.font = '8px monospace';
+    ctx.fillText('made by atomlabor.de', canvas.width / 2, canvas.height / 2 + 126);
     return;
   }
 
