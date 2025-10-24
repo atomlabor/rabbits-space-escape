@@ -249,7 +249,9 @@ function update() {
   if (state.splashScreen || state.gameOver) return;
 
   // Hintergrund scrollen
-  bgOffsetX = (bgOffsetX + bgScrollSpeed) % (backgroundImage.width || 1024);
+  const scrollDirection = state.score >= 1000 ? -1 : 1;
+  const bgWidth = backgroundImage.width || 1024;
+  bgOffsetX = ((bgOffsetX + bgScrollSpeed * scrollDirection) % bgWidth + bgWidth) % bgWidth;
 
   // Kombinierter horizontaler Tilt
   const combinedTiltX = clamp(gyro.x + keyboardTilt, 1);
