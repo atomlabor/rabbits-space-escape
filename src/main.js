@@ -1,4 +1,4 @@
-/* rabbits space escape
+/* rabbits space escape from atomlabor.de 
    optimized for rabbit r1 (240x282), scrolling background and walls, gyro control
    Parallax-Drift + Warp, random carrots, spawn flash, edge bounce
 */
@@ -77,6 +77,13 @@ const warpFX = { active: false, alpha: 0 };
 const bgMusic = document.getElementById('game-music');
 const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
+const warpSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/warp.mp3'); // neu
+
+// Lautstärken 
+bgMusic && (bgMusic.volume = 0.25);
+swooshSound.volume = 0.35;
+explosionSound.volume = 1.0;
+warpSound.volume = 0.8; // Warp angenehm laut
 
 // -------- Gyro-Konfiguration zweiachsig --------
 const MAX_TILT_DEGREE = 6;          // Neigungsbereich pro Achse
@@ -294,16 +301,27 @@ function update() {
   bgOffsetY = ((bgOffsetY + currentBgSpeed * scrollDirY) % bgHeight + bgHeight) % bgHeight;
 
   // Warp bei 2000 Punkten einmalig auslösen
-  if (!state.bgWarped && state.score >= 2000) {
-    state.bgWarped = true;
-    bgOffsetX = Math.floor(Math.random() * bgWidth);
-    bgOffsetY = Math.floor(Math.random() * bgHeight);
+if (!state.bgWarped && state.score >= 2000) {
+  state.bgWarped = true;
 
-    warpFX.active = true;
-    warpFX.alpha = 1;
-    currentBgSpeed = baseBgSpeed * 2.0;
-    setTimeout(() => { currentBgSpeed = baseBgSpeed; }, 700);
-  }
+  // Sound sofort abspielen (vorgeladen, daher ohne Latenz)
+  warpSound.currentTime = 0;
+  warpSound.play().catch(() => {});
+
+  // hart zu einem anderen Bereich des Tiles springen
+  bgOffsetX = Math.floor(Math.random() * bgWidth);
+  bgOffsetY = Math.floor(Math.random() * bgHeight);
+
+  // kurzer visueller Flash + Speed-Boost
+  warpFX.active = true;
+  warpFX.alpha = 1;
+  currentBgSpeed = baseBgSpeed * 2.0;
+
+  setTimeout(() => {
+    currentBgSpeed = baseBgSpeed;
+  }, 700);
+}
+
 
   // Warp-Flash ausfaden lassen
   if (warpFX.active) {
