@@ -15,8 +15,8 @@ gameOverOverlay.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space
 gameOverOverlay.alt = 'Game Over';
 gameOverOverlay.style.cssText = `
   position:absolute;
-  top:50%; left:50%;
-  width:160px; height:160px;   /* Größe hier anpassen */
+  top:30%; left:50%;
+  width:160px; height:140px;  
   transform:translate(-50%,-50%);
   display:none;
   pointer-events:none;
