@@ -42,11 +42,34 @@ const bgMusic = document.getElementById('game-music');
 const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
 
-// gyro control for rabbit r1
-let gyroTilt = 0;
-let keyboardTilt = 0;
-const MAX_TILT_DEGREE = 20;
-const GYRO_SENSITIVITY = 0.15;
+// -------- Gyro-Konfiguration zweiachsig --------
+const MAX_TILT_DEGREE = 45;         // sinnvoller Neigungsbereich pro Achse
+let   DEADZONE = 0.06;              // kleine Wackler filtern
+let   SMOOTHING = 0.15;             // 0..1, höher reagiert schneller
+const GYRO_SENSITIVITY_X = 0.18;    // Einfluss auf horizontale Beschleunigung
+const GYRO_SENSITIVITY_Y = 0.18;    // feiner Einfluss auf vertikale Beschleunigung
+
+// Gyro-Zustände
+let gyro = { x: 0, y: 0 };          // geglättete Werte -1..1
+let target = { x: 0, y: 0 };        // unglättete Zielwerte -1..1
+let neutral = { beta: 0, gamma: 0 };// Kalibrier-Offset
+let lastRaw = { beta: 0, gamma: 0, alpha: 0 };
+
+// Hilfsfunktionen
+const clamp = (v, max) => Math.max(-max, Math.min(max, v));
+const applyDeadzone = v => (Math.abs(v) < DEADZONE ? 0 : v);
+
+function adjustForScreenOrientation(beta, gamma) {
+  const angle = screen.orientation?.angle ?? window.orientation ?? 0;
+  switch (angle) {
+    case 0:   return { beta, gamma };                         // Portrait
+    case 90:  return { beta: -gamma, gamma: beta };           // Landscape links
+    case -90:
+    case 270: return { beta: gamma, gamma: -beta };           // Landscape rechts
+    case 180: return { beta: -beta, gamma: -gamma };          // Portrait invertiert
+    default:  return { beta, gamma };
+  }
+}
 
 // game state
 const state = {
@@ -78,53 +101,103 @@ const obstacles = [];
 
 // input handling
 const keys = {};
+let keyboardTilt = 0; // horizontaler Test-Tilt
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
   if (state.splashScreen && e.key === ' ') {
-    state.splashScreen = false;
-    state.started = true;
-    bgMusic.play().catch(e => console.log('audio autoplay prevented'));
+    startGameWithGyro();
   }
-  // keyboard tilt for desktop testing
-  if (e.key === 'ArrowLeft' || e.key === 'a') {
-    keyboardTilt = -1;
-  }
-  if (e.key === 'ArrowRight' || e.key === 'd') {
-    keyboardTilt = 1;
-  }
+  // keyboard tilt für Desktop
+  if (e.key === 'ArrowLeft' || e.key === 'a') keyboardTilt = -1;
+  if (e.key === 'ArrowRight' || e.key === 'd') keyboardTilt =  1;
 });
 
 window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
-  // reset keyboard tilt
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ArrowRight' || e.key === 'd') {
     keyboardTilt = 0;
   }
 });
 
-// handle device orientation (gyroscope) for rabbit r1
+// handle device orientation
 function handleGyro(event) {
-  if (state.splashScreen || state.gameOver) return;
-  // gamma is left/right tilt (-90 to 90 degrees)
-  let gamma = event.gamma || 0;
-  // clamp to max tilt degree
-  if (gamma < -MAX_TILT_DEGREE) {
-    gamma = -MAX_TILT_DEGREE;
-  } else if (gamma > MAX_TILT_DEGREE) {
-    gamma = MAX_TILT_DEGREE;
-  }
-  // normalize to -1 to 1
-  gyroTilt = gamma / MAX_TILT_DEGREE;
+  // Rohwerte immer aktualisieren, damit Kalibrierung auch am Splash sauber ist
+  lastRaw.beta  = event.beta  ?? 0; // vor zurück
+  lastRaw.gamma = event.gamma ?? 0; // links rechts
+  lastRaw.alpha = event.alpha ?? 0;
+
+  // Nur während laufendem Spiel auf Eingabe mappen
+  if (state.gameOver) return;
+
+  let { beta, gamma } = adjustForScreenOrientation(lastRaw.beta, lastRaw.gamma);
+
+  // Neutralhaltung abziehen
+  beta  -= neutral.beta;
+  gamma -= neutral.gamma;
+
+  // begrenzen und normalisieren
+  const nx = clamp(gamma, MAX_TILT_DEGREE) / MAX_TILT_DEGREE; // X links rechts
+  const ny = clamp(beta,  MAX_TILT_DEGREE) / MAX_TILT_DEGREE; // Y vor zurück
+
+  // Ziel setzen
+  target.x = nx;
+  target.y = ny;
+
+  // Glätten
+  gyro.x += (target.x - gyro.x) * SMOOTHING;
+  gyro.y += (target.y - gyro.y) * SMOOTHING;
+
+  // Deadzone
+  gyro.x = applyDeadzone(gyro.x);
+  gyro.y = applyDeadzone(gyro.y);
 }
 
-// mouse/touch click for splash and restart
+// iOS Permission und Listener
+async function enableGyro() {
+  if (typeof DeviceOrientationEvent === 'undefined') {
+    console.warn('DeviceOrientation nicht verfügbar');
+    return false;
+  }
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const perm = await DeviceOrientationEvent.requestPermission();
+      if (perm !== 'granted') return false;
+    } catch {
+      return false;
+    }
+  }
+  window.addEventListener('deviceorientation', handleGyro, { passive: true });
+  return true;
+}
+
+function calibrateNeutral() {
+  neutral.beta  = lastRaw.beta  ?? 0;
+  neutral.gamma = lastRaw.gamma ?? 0;
+}
+
+async function startGameWithGyro() {
+  state.splashScreen = false;
+  state.started = true;
+  try { await screen.orientation?.lock?.('landscape'); } catch {}
+  const ok = await enableGyro();
+  calibrateNeutral();
+  bgMusic?.play().catch(e => console.log('audio autoplay prevented'));
+  if (!ok) {
+    // Spiel läuft trotzdem weiter, nur ohne Gyro
+    console.warn('Gyro nicht aktiviert. Steuerung per Tastatur verfügbar.');
+  }
+}
+
+window.addEventListener('orientationchange', () => {
+  // kleine Neu-Kalibrierung nach Rotationswechsel
+  setTimeout(calibrateNeutral, 100);
+});
+
+// mouse/touch click für splash und restart
 canvas.addEventListener('click', () => {
   if (state.splashScreen) {
-    state.splashScreen = false;
-    state.started = true;
-    bgMusic.play().catch(e => console.log('audio autoplay prevented'));
+    startGameWithGyro();
   } else if (state.gameOver) {
-    // restart game on click
     resetGame();
     state.started = true;
   }
@@ -152,28 +225,37 @@ function spawnObstacle() {
     width,
     height,
     wallImg: wallImg,
-    speedX: 0.3 + Math.random() * 0.7  // random speed 0.3-1.0 px/frame
+    speedX: 0.3 + Math.random() * 0.7
   });
 }
 
-// initialize game
+// initialize game objects
 for (let i = 0; i < 5; i++) spawnCarrot();
 for (let i = 0; i < 3; i++) spawnObstacle();
 
 // update
 function update() {
   if (state.splashScreen || state.gameOver) return;
-  
-  // scroll background
+
+  // Hintergrund scrollen
   bgOffsetX = (bgOffsetX + bgScrollSpeed) % (backgroundImage.width || 1024);
-  
-  // combined tilt from gyro and keyboard
-  const totalTilt = gyroTilt + keyboardTilt;
-  
-  // apply horizontal acceleration based on tilt
-  player.velocityX += totalTilt * GYRO_SENSITIVITY;
-  
-  // update direction based on velocity
+
+  // Kombinierter horizontaler Tilt
+  const combinedTiltX = clamp(gyro.x + keyboardTilt, 1);
+
+  // Horizontalbeschleunigung durch Tilt
+  player.velocityX += combinedTiltX * GYRO_SENSITIVITY_X;
+
+  // Leichter vertikaler Einfluss durch Gyro
+  // nach vorn kippen bewegt leicht nach oben, nach hinten nach unten
+  player.velocityY += gyro.y * GYRO_SENSITIVITY_Y;
+
+  // Keyboard thrust bleibt aktiv
+  if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
+    player.velocityY += player.thrust;
+  }
+
+  // Richtung für Sprite
   let directionChanged = false;
   if (player.velocityX < -0.1 && player.direction !== 'left') {
     player.direction = 'left';
@@ -182,30 +264,23 @@ function update() {
     player.direction = 'right';
     directionChanged = true;
   }
-  
-  // keyboard thrust (up/space)
-  if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
-    player.velocityY += player.thrust;
-  }
-  
-  // play swoosh on direction change
   if (directionChanged) {
     swooshSound.currentTime = 0;
     swooshSound.play().catch(e => console.log('swoosh blocked'));
   }
-  
-  // gravity
+
+  // Schwerkraft
   player.velocityY += player.gravity;
-  
-  // apply velocity
+
+  // Bewegung anwenden
   player.x += player.velocityX;
   player.y += player.velocityY;
-  
-  // friction
+
+  // Reibung
   player.velocityX *= 0.98;
   player.velocityY *= 0.98;
-  
-  // wall collision - explosion
+
+  // Kollision Ränder
   if (player.x <= 0 || player.x + player.width >= canvas.width ||
       player.y <= 0 || player.y + player.height >= canvas.height) {
     if (!state.exploding) {
@@ -215,8 +290,8 @@ function update() {
       setTimeout(gameOver, 500);
     }
   }
-  
-  // carrot collection
+
+  // Karotten einsammeln
   carrots.forEach((carrot, i) => {
     if (player.x < carrot.x + carrot.width &&
         player.x + player.width > carrot.x &&
@@ -227,8 +302,8 @@ function update() {
       spawnCarrot();
     }
   });
-  
-  // obstacle collision
+
+  // Hindernisse Kollision
   obstacles.forEach(obs => {
     if (player.x < obs.x + obs.width &&
         player.x + player.width > obs.x &&
@@ -242,11 +317,10 @@ function update() {
       }
     }
   });
-  
-  // move obstacles left (scrolling walls)
+
+  // Hindernisse nach links bewegen und recyceln
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].x -= obstacles[i].speedX;
-    // respawn if obstacle scrolled off screen
     if (obstacles[i].x + obstacles[i].width < 0) {
       obstacles.splice(i, 1);
       spawnObstacle();
@@ -256,7 +330,7 @@ function update() {
 
 // draw
 function draw() {
-  // scrolling background
+  // Hintergrund
   if (bgPattern) {
     ctx.save();
     ctx.translate(-bgOffsetX, 0);
@@ -269,8 +343,8 @@ function draw() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  
-  // splash screen
+
+  // Splash
   if (state.splashScreen) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -282,12 +356,15 @@ function draw() {
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('click to start', canvas.width / 2, canvas.height / 2 + 110);
+    // kleine Debug-Info am Splash
+    ctx.font = '10px monospace';
+    ctx.fillText('kippe leicht und klicke', canvas.width / 2, canvas.height / 2 + 126);
     return;
   }
-  
+
   if (!state.started) return;
-  
-  // carrots
+
+  // Karotten
   carrots.forEach(carrot => {
     if (carrotImage.complete) {
       ctx.drawImage(carrotImage, carrot.x, carrot.y, carrot.width, carrot.height);
@@ -296,8 +373,8 @@ function draw() {
       ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
     }
   });
-  
-  // obstacles with wall graphics
+
+  // Hindernisse
   obstacles.forEach(obs => {
     if (obs.wallImg && obs.wallImg.complete) {
       ctx.drawImage(obs.wallImg, obs.x, obs.y, obs.width, obs.height);
@@ -306,8 +383,8 @@ function draw() {
       ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
     }
   });
-  
-  // player or explosion
+
+  // Spieler oder Explosion
   if (state.exploding) {
     ctx.fillStyle = `rgba(255, ${100 + state.explosionFrame * 30}, 0, ${1 - state.explosionFrame * 0.2})`;
     ctx.beginPath();
@@ -323,15 +400,24 @@ function draw() {
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
   }
-  
-  // score
+
+  // Score
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 12px Arial';
   ctx.textAlign = 'left';
   ctx.fillText(`score: ${state.score}`, 5, 15);
   ctx.fillText(`high: ${state.highScore}`, 5, 30);
-  
-  // game over
+
+  // kleine Gyro-Debugbox
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(canvas.width - 86, 4, 82, 24);
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`GX:${gyro.x.toFixed(2)}`, canvas.width - 80, 14);
+  ctx.fillText(`GY:${gyro.y.toFixed(2)}`, canvas.width - 80, 24);
+
+  // Game Over
   if (state.gameOver) {
     ctx.fillStyle = 'rgba(0,0,0,0.8)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -374,6 +460,7 @@ function resetGame() {
   obstacles.length = 0;
   for (let i = 0; i < 5; i++) spawnCarrot();
   for (let i = 0; i < 3; i++) spawnObstacle();
+  calibrateNeutral();
 }
 
 // game loop
@@ -382,8 +469,4 @@ function gameLoop() {
   draw();
   requestAnimationFrame(gameLoop);
 }
-
-// gyroscope event listener for rabbit r1 hardware
-window.addEventListener('deviceorientation', handleGyro, true);
-
 gameLoop();
