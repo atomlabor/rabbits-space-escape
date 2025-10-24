@@ -377,20 +377,35 @@ function update() {
     }
   });
 
-  // Hindernisse Kollision
-  obstacles.forEach(obs => {
-    if (player.x < obs.x + obs.width &&
-        player.x + player.width > obs.x &&
-        player.y < obs.y + obs.height &&
-        player.y + player.height > obs.y) {
-      if (!state.exploding) {
-        state.exploding = true;
-        state.explosionFrame = 0;
-        explosionSound.play().catch(()=>{});
-        setTimeout(gameOver, 500);
+// Hindernisse Kollision
+obstacles.forEach(obs => {
+  if (
+    player.x < obs.x + obs.width &&
+    player.x + player.width > obs.x &&
+    player.y < obs.y + obs.height &&
+    player.y + player.height > obs.y
+  ) {
+    if (!state.exploding) {
+      state.exploding = true;
+      state.explosionFrame = 0;
+
+      // Explosion Sound lauter & reset
+      explosionSound.currentTime = 0;
+      explosionSound.volume = 1.0; // maximale Lautstärke
+      explosionSound.play().catch(() => {});
+
+      // Musik leicht absenken (Ducking)
+      if (bgMusic) {
+        const baseVol = 0.25;
+        bgMusic.volume = Math.max(0, baseVol * 0.4);
+        setTimeout(() => { bgMusic.volume = baseVol; }, 700);
       }
+
+      setTimeout(gameOver, 500);
     }
-  });
+  }
+});
+
 
   // Hindernisse bewegen & recyceln
   for (let i = obstacles.length - 1; i >= 0; i--) {
