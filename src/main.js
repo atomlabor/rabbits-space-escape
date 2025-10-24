@@ -369,6 +369,7 @@ function gameOver() {
     state.highScore = state.score;
     localStorage.setItem('rse:highScore', Math.floor(state.highScore));
      }
+     }
 
 
 // reset game
