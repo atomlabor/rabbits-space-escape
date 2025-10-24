@@ -86,11 +86,11 @@ const state = {
 const player = {
   x: canvas.width / 2 - 15,
   y: canvas.height / 2,
-  width: 30,
-  height: 30,
+  width: 40,
+  height: 40,
   velocityX: 0,
   velocityY: 0,
-  gravity: 0.25,
+  gravity: 0.025,
   thrust: -0.5,
   direction: 'right',
 };
@@ -206,10 +206,10 @@ canvas.addEventListener('click', () => {
 // spawn carrot
 function spawnCarrot() {
   carrots.push({
-    x: Math.random() * (canvas.width - 15),
-    y: Math.random() * (canvas.height - 15),
-    width: 15,
-    height: 15,
+    x: Math.random() * (canvas.width - 25),
+    y: Math.random() * (canvas.height - 25),
+    width: 25,
+    height: 25,
   });
 }
 
