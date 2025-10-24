@@ -9,6 +9,25 @@ const ctx = canvas.getContext('2d');
 canvas.width = 240;
 canvas.height = 282;
 
+// === Animated Game Over GIF Overlay ===
+const gameOverOverlay = new Image();
+gameOverOverlay.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spacecraft.gif';
+gameOverOverlay.alt = 'Game Over';
+gameOverOverlay.style.cssText = `
+  position:absolute;
+  top:50%; left:50%;
+  width:160px; height:160px;   /* Größe hier anpassen */
+  transform:translate(-50%,-50%);
+  display:none;
+  pointer-events:none;
+  z-index:10;
+`;
+// Parent des Canvas sicher positionieren
+const wrapEl = canvas.parentElement || document.body;
+if (getComputedStyle(wrapEl).position === 'static') wrapEl.style.position = 'relative';
+wrapEl.appendChild(gameOverOverlay);
+
+
 // asset loading
 const shipLeft = new Image();
 shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
@@ -488,33 +507,36 @@ function draw() {
   ctx.fillText(`GX:${gyro.x.toFixed(2)}`, canvas.width - 80, 14);
   ctx.fillText(`GY:${gyro.y.toFixed(2)}`, canvas.width - 80, 24);
 
-  // Game Over
-  if (state.gameOver) {
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (gameOverImage.complete) {
-      const size = 80;
-      ctx.drawImage(gameOverImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 40, size, size);
-    }
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('game over', canvas.width / 2, canvas.height / 2 + 50);
-    ctx.font = '16px Arial';
-    ctx.fillText(`score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 75);
-    ctx.font = '14px Arial';
-    ctx.fillText('click to restart', canvas.width / 2, canvas.height / 2 + 100);
-  }
+// Game Over
+if (state.gameOver) {
+  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // KEIN drawImage(gameOverImage, ...) mehr hier – das GIF kommt als Overlay
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 24px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('game over', canvas.width / 2, canvas.height / 2 + 50);
+  ctx.font = '16px Arial';
+  ctx.fillText(`score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 75);
+  ctx.font = '14px Arial';
+  ctx.fillText('click to restart', canvas.width / 2, canvas.height / 2 + 100);
 }
 
-// game over
+
 function gameOver() {
   state.gameOver = true;
+
+  // animiertes GIF einblenden
+  gameOverOverlay.style.display = 'block';
+
   if (state.score > state.highScore) {
     state.highScore = state.score;
     localStorage.setItem('rse:highScore', Math.floor(state.highScore));
   }
 }
+
 
 // reset game
 function resetGame() {
@@ -540,6 +562,9 @@ function resetGame() {
   warpFX.active = false;
   warpFX.alpha = 0;
   currentBgSpeed = baseBgSpeed;
+   // animiertes GIF wieder verstecken
+gameOverOverlay.style.display = 'none';
+
 }
 
 // game loop
