@@ -1,5 +1,7 @@
 /* rabbits space escape
-   optimized for rabbit r1 (240x282), scrolling background and walls, gyro control */
+   optimized for rabbit r1 (240x282), scrolling background and walls, gyro control
+   Parallax-Drift + Warp, random carrots, spawn flash, edge bounce
+*/
 
 // canvas setup
 const canvas = document.getElementById('gameCanvas');
@@ -12,23 +14,23 @@ const shipLeft = new Image();
 shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
 const shipRight = new Image();
 shipRight.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-right.png';
+
 const splashImage = new Image();
 splashImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit.png';
-// carrot graphics
-const carrotImages = [
-  new Image(),
-  new Image()
-];
 
+// carrot graphics (random)
+const carrotImages = [new Image(), new Image()];
 carrotImages[0].src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-1.png';
 carrotImages[1].src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/carrot-2.png';
 
 const backgroundImage = new Image();
 backgroundImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/background.jpg';
+
 const gameOverImage = new Image();
 gameOverImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spacecraft.gif';
-const spawnFlashes = [];
 
+// kleine Spawn-Blitze
+const spawnFlashes = [];
 
 // wall graphics
 const wallImage1 = new Image();
@@ -38,20 +40,19 @@ wallImage2.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 const wallImage3 = new Image();
 wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall3.png';
 
-// background scrolling
+// background scrolling / parallax
 let bgPattern = null;
 let bgOffsetX = 0;
-let bgOffsetY = 0;                 // neu
+let bgOffsetY = 0;
 const baseBgSpeed = 0.15;
-let currentBgSpeed = baseBgSpeed;  // für kurzzeitige Boosts
+let currentBgSpeed = baseBgSpeed;
 
 backgroundImage.onload = () => {
   bgPattern = ctx.createPattern(backgroundImage, 'repeat');
 };
 
-// Warp-Effekt
+// Warp-Effekt Overlay
 const warpFX = { active: false, alpha: 0 };
-
 
 // sounds
 const bgMusic = document.getElementById('game-music');
@@ -96,9 +97,8 @@ const state = {
   explosionFrame: 0,
   score: 0,
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
-  bgWarped: false // neu: wurde der 2000er Warp schon ausgelöst?
+  bgWarped: false // wurde der 2000er Warp schon ausgelöst?
 };
-
 
 // player (spaceship)
 const player = {
@@ -125,7 +125,6 @@ window.addEventListener('keydown', (e) => {
   if (state.splashScreen && e.key === ' ') {
     startGameWithGyro();
   }
-  // keyboard tilt für Desktop
   if (e.key === 'ArrowLeft' || e.key === 'a') keyboardTilt = -1;
   if (e.key === 'ArrowRight' || e.key === 'd') keyboardTilt =  1;
 });
@@ -139,33 +138,26 @@ window.addEventListener('keyup', (e) => {
 
 // handle device orientation
 function handleGyro(event) {
-  // Rohwerte immer aktualisieren, damit Kalibrierung auch am Splash sauber ist
   lastRaw.beta  = event.beta  ?? 0; // vor zurück
   lastRaw.gamma = event.gamma ?? 0; // links rechts
   lastRaw.alpha = event.alpha ?? 0;
 
-  // Nur während laufendem Spiel auf Eingabe mappen
   if (state.gameOver) return;
 
   let { beta, gamma } = adjustForScreenOrientation(lastRaw.beta, lastRaw.gamma);
 
-  // Neutralhaltung abziehen
   beta  -= neutral.beta;
   gamma -= neutral.gamma;
 
-  // begrenzen und normalisieren
-  const nx = clamp(gamma, MAX_TILT_DEGREE) / MAX_TILT_DEGREE; // X links rechts
-  const ny = clamp(beta,  MAX_TILT_DEGREE) / MAX_TILT_DEGREE; // Y vor zurück
+  const nx = clamp(gamma, MAX_TILT_DEGREE) / MAX_TILT_DEGREE;
+  const ny = clamp(beta,  MAX_TILT_DEGREE) / MAX_TILT_DEGREE;
 
-  // Ziel setzen
   target.x = nx;
   target.y = ny;
 
-  // Glätten
   gyro.x += (target.x - gyro.x) * SMOOTHING;
   gyro.y += (target.y - gyro.y) * SMOOTHING;
 
-  // Deadzone
   gyro.x = applyDeadzone(gyro.x);
   gyro.y = applyDeadzone(gyro.y);
 }
@@ -199,15 +191,11 @@ async function startGameWithGyro() {
   try { await screen.orientation?.lock?.('landscape'); } catch {}
   const ok = await enableGyro();
   calibrateNeutral();
-  bgMusic?.play().catch(e => console.log('audio autoplay prevented'));
-  if (!ok) {
-    // Spiel läuft trotzdem weiter, nur ohne Gyro
-    console.warn('Gyro nicht aktiviert. Steuerung per Tastatur verfügbar.');
-  }
+  bgMusic?.play().catch(() => {});
+  if (!ok) console.warn('Gyro nicht aktiviert. Steuerung per Tastatur verfügbar.');
 }
 
 window.addEventListener('orientationchange', () => {
-  // kleine Neu-Kalibrierung nach Rotationswechsel
   setTimeout(calibrateNeutral, 100);
 });
 
@@ -221,57 +209,36 @@ canvas.addEventListener('click', () => {
   }
 });
 
-// spawn carrot
+// spawn carrot (mit Flash + random Image)
 function spawnCarrot() {
-  const x = Math.random() * (canvas.width - 25);
-  const y = Math.random() * (canvas.height - 25);
+  const size = 25;
+  const x = Math.random() * (canvas.width  - size);
+  const y = Math.random() * (canvas.height - size);
   const img = carrotImages[Math.floor(Math.random() * carrotImages.length)];
 
-  carrots.push({
-    x,
-    y,
-    width: 25,
-    height: 25,
-    img
-  });
+  carrots.push({ x, y, width: size, height: size, img });
 
-  // Optional: kleiner Lichtblitz falls du ihn schon drin hast
-  spawnFlashes.push({
-    x: x + 12.5,
-    y: y + 12.5,
-    radius: 2,
-    alpha: 1
-  });
+  // Mini-Lichtblitz
+  spawnFlashes.push({ x: x + size/2, y: y + size/2, radius: 2, alpha: 1 });
 }
-
-
 
 // spawn obstacle only off-screen right, then scroll left into view
 function spawnObstacle() {
   const width  = 20 + Math.random() * 30;
   const height = 20 + Math.random() * 30;
-
-  // y immer innerhalb des Spielfelds halten
   const y = Math.random() * (canvas.height - height);
 
-  // nur rechts außerhalb spawnen
-  const offscreenPadding = 40 + Math.random() * 80; // Abstand außerhalb des Screens
+  const offscreenPadding = 40 + Math.random() * 80; // rechts offscreen
   const x = canvas.width + offscreenPadding;
 
   const walls = [wallImage1, wallImage2, wallImage3];
   const wallImg = walls[Math.floor(Math.random() * walls.length)];
 
   obstacles.push({
-    x,
-    y,
-    width,
-    height,
-    wallImg,
-    // nach links bewegen
+    x, y, width, height, wallImg,
     speedX: 0.3 + Math.random() * 0.7
   });
 }
-
 
 // initialize game objects
 for (let i = 0; i < 5; i++) spawnCarrot();
@@ -281,92 +248,72 @@ for (let i = 0; i < 3; i++) spawnObstacle();
 function update() {
   if (state.splashScreen || state.gameOver) return;
 
-   // Blitze leicht wachsen und verblassen lassen
-for (let i = spawnFlashes.length - 1; i >= 0; i--) {
-  const f = spawnFlashes[i];
-  f.radius += 0.8;      // wächst
-  f.alpha -= 0.05;      // verblasst
-  if (f.alpha <= 0) spawnFlashes.splice(i, 1);
-}
-   
-// Hintergrund scrollen | leichter Parallax-Drift
-const bgWidth  = backgroundImage.width  || 1024;
-const bgHeight = backgroundImage.height || 1024;
-
-const t = performance.now();
-const scrollDirX = Math.sin(t / 800);
-const scrollDirY = Math.cos(t / 1000);
-
-bgOffsetX = ((bgOffsetX + currentBgSpeed * scrollDirX) % bgWidth  + bgWidth)  % bgWidth;
-bgOffsetY = ((bgOffsetY + currentBgSpeed * scrollDirY) % bgHeight + bgHeight) % bgHeight;
-
-// Warp bei 2000 Punkten einmalig auslösen
-if (!state.bgWarped && state.score >= 2000) {
-  state.bgWarped = true;
-
-  // hart zu einem anderen Bereich des Tiles springen
-  bgOffsetX = Math.floor(Math.random() * bgWidth);
-  bgOffsetY = Math.floor(Math.random() * bgHeight);
-
-  // kurzer visueller Flash + Speed-Boost
-  warpFX.active = true;
-  warpFX.alpha = 1;
-  currentBgSpeed = baseBgSpeed * 2.0;
-  setTimeout(() => { currentBgSpeed = baseBgSpeed; }, 700);
-}
-
-// Warp-Flash ausfaden lassen
-if (warpFX.active) {
-  warpFX.alpha -= 0.05;
-  if (warpFX.alpha <= 0) {
-    warpFX.alpha = 0;
-    warpFX.active = false;
+  // Spawn-Blitze animieren
+  for (let i = spawnFlashes.length - 1; i >= 0; i--) {
+    const f = spawnFlashes[i];
+    f.radius += 0.8;
+    f.alpha  -= 0.05;
+    if (f.alpha <= 0) spawnFlashes.splice(i, 1);
   }
-}
 
+  // Hintergrund scrollen | leichter Parallax-Drift
+  const bgWidth  = backgroundImage.width  || 1024;
+  const bgHeight = backgroundImage.height || 1024;
 
-// sanfte Richtungsänderung über Zeit
-const t = performance.now();
-const scrollDirX = Math.sin(t / 800);   // horizontaler Drift
-const scrollDirY = Math.cos(t / 1000);  // vertikaler Drift
+  const t = performance.now();
+  const scrollDirX = Math.sin(t / 800);   // horizontaler Drift
+  const scrollDirY = Math.cos(t / 1000);  // vertikaler Drift
 
-bgOffsetX = ((bgOffsetX + bgScrollSpeed * scrollDirX) % bgWidth  + bgWidth)  % bgWidth;
-bgOffsetY = ((bgOffsetY + bgScrollSpeed * scrollDirY) % bgHeight + bgHeight) % bgHeight;
+  bgOffsetX = ((bgOffsetX + currentBgSpeed * scrollDirX) % bgWidth  + bgWidth)  % bgWidth;
+  bgOffsetY = ((bgOffsetY + currentBgSpeed * scrollDirY) % bgHeight + bgHeight) % bgHeight;
 
+  // Warp bei 2000 Punkten einmalig auslösen
+  if (!state.bgWarped && state.score >= 2000) {
+    state.bgWarped = true;
+    bgOffsetX = Math.floor(Math.random() * bgWidth);
+    bgOffsetY = Math.floor(Math.random() * bgHeight);
+
+    warpFX.active = true;
+    warpFX.alpha = 1;
+    currentBgSpeed = baseBgSpeed * 2.0;
+    setTimeout(() => { currentBgSpeed = baseBgSpeed; }, 700);
+  }
+
+  // Warp-Flash ausfaden lassen
+  if (warpFX.active) {
+    warpFX.alpha -= 0.05;
+    if (warpFX.alpha <= 0) {
+      warpFX.alpha = 0;
+      warpFX.active = false;
+    }
+  }
 
   // Kombinierter horizontaler Tilt
   const combinedTiltX = clamp(gyro.x + keyboardTilt, 1);
 
-  // Horizontalbeschleunigung durch Tilt
+  // Horizontal/Vertikal
   player.velocityX += combinedTiltX * GYRO_SENSITIVITY_X;
-
-  // Leichter vertikaler Einfluss durch Gyro
-  // nach vorn kippen bewegt leicht nach oben, nach hinten nach unten
   player.velocityY += gyro.y * GYRO_SENSITIVITY_Y;
 
-  // Keyboard thrust bleibt aktiv
+  // Keyboard thrust
   if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
     player.velocityY += player.thrust;
   }
 
-  // Richtung für Sprite
+  // Richtung fürs Sprite
   let directionChanged = false;
   if (player.velocityX < -0.1 && player.direction !== 'left') {
-    player.direction = 'left';
-    directionChanged = true;
+    player.direction = 'left'; directionChanged = true;
   } else if (player.velocityX > 0.1 && player.direction !== 'right') {
-    player.direction = 'right';
-    directionChanged = true;
+    player.direction = 'right'; directionChanged = true;
   }
   if (directionChanged) {
     swooshSound.currentTime = 0;
-    swooshSound.play().catch(e => console.log('swoosh blocked'));
+    swooshSound.play().catch(()=>{});
   }
 
-  // Schwerkraft
+  // Schwerkraft & Bewegung
   player.velocityY += player.gravity;
-
-  // Bewegung anwenden
   player.x += player.velocityX;
   player.y += player.velocityY;
 
@@ -374,27 +321,23 @@ bgOffsetY = ((bgOffsetY + bgScrollSpeed * scrollDirY) % bgHeight + bgHeight) % b
   player.velocityX *= 0.98;
   player.velocityY *= 0.98;
 
-// Kollision Ränder: leicht zurückdrücken statt explodieren
-if (player.x <= 0) {
-  player.x = 0;
-  player.velocityX = Math.abs(player.velocityX) * 0.6; // nach rechts stoßen, leicht dämpfen
-}
-
-if (player.x + player.width >= canvas.width) {
-  player.x = canvas.width - player.width;
-  player.velocityX = -Math.abs(player.velocityX) * 0.6; // nach links stoßen
-}
-
-if (player.y <= 0) {
-  player.y = 0;
-  player.velocityY = Math.abs(player.velocityY) * 0.6; // nach unten stoßen
-}
-
-if (player.y + player.height >= canvas.height) {
-  player.y = canvas.height - player.height;
-  player.velocityY = -Math.abs(player.velocityY) * 0.6; // nach oben stoßen
-}
-
+  // Ränder: sanft zurückdrücken
+  if (player.x <= 0) {
+    player.x = 0;
+    player.velocityX = Math.abs(player.velocityX) * 0.6;
+  }
+  if (player.x + player.width >= canvas.width) {
+    player.x = canvas.width - player.width;
+    player.velocityX = -Math.abs(player.velocityX) * 0.6;
+  }
+  if (player.y <= 0) {
+    player.y = 0;
+    player.velocityY = Math.abs(player.velocityY) * 0.6;
+  }
+  if (player.y + player.height >= canvas.height) {
+    player.y = canvas.height - player.height;
+    player.velocityY = -Math.abs(player.velocityY) * 0.6;
+  }
 
   // Karotten einsammeln
   carrots.forEach((carrot, i) => {
@@ -417,13 +360,13 @@ if (player.y + player.height >= canvas.height) {
       if (!state.exploding) {
         state.exploding = true;
         state.explosionFrame = 0;
-        explosionSound.play().catch(e => console.log('explosion blocked'));
+        explosionSound.play().catch(()=>{});
         setTimeout(gameOver, 500);
       }
     }
   });
 
-  // Hindernisse nach links bewegen und recyceln
+  // Hindernisse bewegen & recyceln
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].x -= obstacles[i].speedX;
     if (obstacles[i].x + obstacles[i].width < 0) {
@@ -435,47 +378,45 @@ if (player.y + player.height >= canvas.height) {
 
 // draw
 function draw() {
-// Hintergrund
-if (bgPattern) {
-  const bgWidth  = backgroundImage.width  || 1024;
-  const bgHeight = backgroundImage.height || 1024;
+  // Hintergrund
+  if (bgPattern) {
+    const bgWidth  = backgroundImage.width  || 1024;
+    const bgHeight = backgroundImage.height || 1024;
 
-  ctx.save();
-  ctx.translate(-bgOffsetX, -bgOffsetY);
-  ctx.fillStyle = bgPattern;
-  ctx.fillRect(0, 0, canvas.width + bgWidth, canvas.height + bgHeight);
-  ctx.restore();
-} else if (backgroundImage.complete) {
-  ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
-} else {
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+    ctx.save();
+    ctx.translate(-bgOffsetX, -bgOffsetY);
+    ctx.fillStyle = bgPattern;
+    ctx.fillRect(0, 0, canvas.width + bgWidth, canvas.height + bgHeight);
+    ctx.restore();
+  } else if (backgroundImage.complete) {
+    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 
-// Warp-Flash Overlay
-if (warpFX.active && warpFX.alpha > 0) {
-  ctx.save();
-  ctx.globalAlpha = Math.min(0.6, warpFX.alpha * 0.6);
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
-}
-
-
+  // Warp-Flash Overlay
+  if (warpFX.active && warpFX.alpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.6, warpFX.alpha * 0.6);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
 
   // Splash
   if (state.splashScreen) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (splashImage.complete) {
-      const size = 180;
+      const baseSize = 150;
+      const size = baseSize * 1.05; // +5 %
       ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 10, size, size);
     }
     ctx.fillStyle = '#fff';
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('click to start', canvas.width / 2, canvas.height / 2 + 110);
-    // kleine Debug-Info am Splash
     ctx.font = '10px monospace';
     ctx.fillText('atomlabor.de', canvas.width / 2, canvas.height / 2 + 126);
     return;
@@ -483,28 +424,26 @@ if (warpFX.active && warpFX.alpha > 0) {
 
   if (!state.started) return;
 
-// Spawning-Lichtblitze zeichnen
-spawnFlashes.forEach(f => {
-  const gradient = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.radius * 3);
-  gradient.addColorStop(0, `rgba(255,255,180,${f.alpha})`);
-  gradient.addColorStop(1, 'rgba(255,255,180,0)');
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(f.x, f.y, f.radius * 3, 0, Math.PI * 2);
-  ctx.fill();
-});
+  // Spawning-Lichtblitze zeichnen
+  spawnFlashes.forEach(f => {
+    const gradient = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.radius * 3);
+    gradient.addColorStop(0, `rgba(255,255,180,${f.alpha})`);
+    gradient.addColorStop(1, 'rgba(255,255,180,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.radius * 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
-   
-// Karotten zeichnen
-carrots.forEach(carrot => {
-  if (carrot.img && carrot.img.complete) {
-    ctx.drawImage(carrot.img, carrot.x, carrot.y, carrot.width, carrot.height);
-  } else {
-    ctx.fillStyle = '#ff8800';
-    ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
-  }
-});
-
+  // Karotten
+  carrots.forEach(carrot => {
+    if (carrot.img && carrot.img.complete) {
+      ctx.drawImage(carrot.img, carrot.x, carrot.y, carrot.width, carrot.height);
+    } else {
+      ctx.fillStyle = '#ff8800';
+      ctx.fillRect(carrot.x, carrot.y, carrot.width, carrot.height);
+    }
+  });
 
   // Hindernisse
   obstacles.forEach(obs => {
@@ -583,21 +522,24 @@ function resetGame() {
   state.exploding = false;
   state.explosionFrame = 0;
   state.score = 0;
+
   player.x = canvas.width / 2 - 15;
   player.y = canvas.height / 2;
   player.velocityX = 0;
   player.velocityY = 0;
   player.direction = 'right';
+
   carrots.length = 0;
   obstacles.length = 0;
   for (let i = 0; i < 5; i++) spawnCarrot();
   for (let i = 0; i < 3; i++) spawnObstacle();
-  calibrateNeutral();
-state.bgWarped = false;
-warpFX.active = false;
-warpFX.alpha = 0;
-currentBgSpeed = baseBgSpeed;
 
+  calibrateNeutral();
+
+  state.bgWarped = false;
+  warpFX.active = false;
+  warpFX.alpha = 0;
+  currentBgSpeed = baseBgSpeed;
 }
 
 // game loop
