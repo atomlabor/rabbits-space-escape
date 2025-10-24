@@ -46,7 +46,7 @@ const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/ra
 let gyroTilt = 0;
 let keyboardTilt = 0;
 const MAX_TILT_DEGREE = 20;
-const GYRO_SENSITIVITY = 0.5;
+const GYRO_SENSITIVITY = 00.155;
 
 // game state
 const state = {
@@ -147,7 +147,7 @@ function spawnObstacle() {
   const walls = [wallImage1, wallImage2, wallImage3];
   const wallImg = walls[Math.floor(Math.random() * 3)];
   obstacles.push({
-    x: Math.random() * (canvas.width - width),
+    x: canvas.width
     y: Math.random() * (canvas.height - height),
     width,
     height,
