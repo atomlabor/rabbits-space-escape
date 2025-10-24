@@ -1,13 +1,13 @@
-/* Rabbits Space Escape - Complete Game
-   Optimized for Rabbit R1 (240x282), scrolling background */
+/* rabbits space escape
+   optimized for rabbit r1 (240x282), scrolling background */
 
-// Canvas setup
+// canvas setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = 240;
 canvas.height = 282;
 
-// Asset loading
+// asset loading
 const shipLeft = new Image();
 shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
 const shipRight = new Image();
@@ -21,7 +21,7 @@ backgroundImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space
 const gameOverImage = new Image();
 gameOverImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spacecraft.gif';
 
-// Wall graphics
+// wall graphics
 const wallImage1 = new Image();
 wallImage1.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall.png';
 const wallImage2 = new Image();
@@ -29,7 +29,7 @@ wallImage2.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 const wallImage3 = new Image();
 wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall3.png';
 
-// Background scrolling
+// background scrolling
 let bgPattern = null;
 let bgOffsetX = 0;
 const bgScrollSpeed = 0.5;
@@ -37,12 +37,12 @@ backgroundImage.onload = () => {
     bgPattern = ctx.createPattern(backgroundImage, 'repeat');
 };
 
-// Sounds
+// sounds
 const bgMusic = document.getElementById('game-music');
 const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
 
-// Game state
+// game state
 const state = {
     splashScreen: true,
     started: false,
@@ -53,7 +53,7 @@ const state = {
     highScore: Number(localStorage.getItem('rse:highScore') || 0),
 };
 
-// Player (spaceship)
+// player (spaceship)
 const player = {
     x: canvas.width / 2 - 15,
     y: canvas.height / 2,
@@ -66,18 +66,18 @@ const player = {
     direction: 'right',
 };
 
-// Arrays for game objects
+// arrays for game objects
 const carrots = [];
 const obstacles = [];
 
-// Input handling
+// input handling
 const keys = {};
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
     if (state.splashScreen && e.key === ' ') {
         state.splashScreen = false;
         state.started = true;
-        bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
+        bgMusic.play().catch(e => console.log('audio autoplay prevented'));
     }
 });
 
@@ -85,16 +85,20 @@ window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// Mouse click for splash
+// mouse/touch click for splash and restart
 canvas.addEventListener('click', () => {
     if (state.splashScreen) {
         state.splashScreen = false;
         state.started = true;
-        bgMusic.play().catch(e => console.log('Audio autoplay prevented'));
+        bgMusic.play().catch(e => console.log('audio autoplay prevented'));
+    } else if (state.gameOver) {
+        // restart game on click
+        resetGame();
+        state.started = true;
     }
 });
 
-// Spawn carrot
+// spawn carrot
 function spawnCarrot() {
     carrots.push({
         x: Math.random() * (canvas.width - 15),
@@ -104,7 +108,7 @@ function spawnCarrot() {
     });
 }
 
-// Spawn obstacle with wall graphic
+// spawn obstacle with wall graphic
 function spawnObstacle() {
     const width = 20 + Math.random() * 30;
     const height = 20 + Math.random() * 30;
@@ -119,18 +123,18 @@ function spawnObstacle() {
     });
 }
 
-// Initialize game
+// initialize game
 for (let i = 0; i < 5; i++) spawnCarrot();
 for (let i = 0; i < 3; i++) spawnObstacle();
 
-// Update
+// update
 function update() {
     if (state.splashScreen || state.gameOver) return;
 
-    // Scroll background
+    // scroll background
     bgOffsetX = (bgOffsetX + bgScrollSpeed) % (backgroundImage.width || 1024);
 
-    // Movement and direction change
+    // movement and direction change
     let directionChanged = false;
     if (keys['ArrowLeft'] || keys['a']) {
         player.velocityX -= 0.3;
@@ -150,35 +154,35 @@ function update() {
         player.velocityY += player.thrust;
     }
 
-    // Play swoosh on direction change
+    // play swoosh on direction change
     if (directionChanged) {
         swooshSound.currentTime = 0;
-        swooshSound.play().catch(e => console.log('Swoosh blocked'));
+        swooshSound.play().catch(e => console.log('swoosh blocked'));
     }
 
-    // Gravity
+    // gravity
     player.velocityY += player.gravity;
 
-    // Apply velocity
+    // apply velocity
     player.x += player.velocityX;
     player.y += player.velocityY;
 
-    // Friction
+    // friction
     player.velocityX *= 0.98;
     player.velocityY *= 0.98;
 
-    // Wall collision - EXPLOSION
+    // wall collision - explosion
     if (player.x <= 0 || player.x + player.width >= canvas.width ||
         player.y <= 0 || player.y + player.height >= canvas.height) {
         if (!state.exploding) {
             state.exploding = true;
             state.explosionFrame = 0;
-            explosionSound.play().catch(e => console.log('Explosion blocked'));
+            explosionSound.play().catch(e => console.log('explosion blocked'));
             setTimeout(gameOver, 500);
         }
     }
 
-    // Carrot collection
+    // carrot collection
     carrots.forEach((carrot, i) => {
         if (player.x < carrot.x + carrot.width &&
             player.x + player.width > carrot.x &&
@@ -190,7 +194,7 @@ function update() {
         }
     });
 
-    // Obstacle collision
+    // obstacle collision
     obstacles.forEach(obs => {
         if (player.x < obs.x + obs.width &&
             player.x + player.width > obs.x &&
@@ -199,16 +203,16 @@ function update() {
             if (!state.exploding) {
                 state.exploding = true;
                 state.explosionFrame = 0;
-                explosionSound.play().catch(e => console.log('Explosion blocked'));
+                explosionSound.play().catch(e => console.log('explosion blocked'));
                 setTimeout(gameOver, 500);
             }
         }
     });
 }
 
-// Draw
+// draw
 function draw() {
-    // Scrolling background
+    // scrolling background
     if (bgPattern) {
         ctx.save();
         ctx.translate(-bgOffsetX, 0);
@@ -222,26 +226,24 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Splash screen
+    // splash screen
     if (state.splashScreen) {
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         if (splashImage.complete) {
             const size = 150;
-            ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 30, size, size);
+            ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 10, size, size);
         }
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 20px Arial';
+        ctx.font = '14px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText("Rabbit's Space Escape", canvas.width / 2, canvas.height / 2 + 80);
-        ctx.font = '12px Arial';
-        ctx.fillText('Klick oder Leertaste', canvas.width / 2, canvas.height / 2 + 100);
+        ctx.fillText('click to start', canvas.width / 2, canvas.height / 2 + 110);
         return;
     }
 
     if (!state.started) return;
 
-    // Carrots
+    // carrots
     carrots.forEach(carrot => {
         if (carrotImage.complete) {
             ctx.drawImage(carrotImage, carrot.x, carrot.y, carrot.width, carrot.height);
@@ -251,7 +253,7 @@ function draw() {
         }
     });
 
-    // Obstacles with wall graphics
+    // obstacles with wall graphics
     obstacles.forEach(obs => {
         if (obs.wallImg && obs.wallImg.complete) {
             ctx.drawImage(obs.wallImg, obs.x, obs.y, obs.width, obs.height);
@@ -261,7 +263,7 @@ function draw() {
         }
     });
 
-    // Player or explosion
+    // player or explosion
     if (state.exploding) {
         ctx.fillStyle = `rgba(255, ${100 + state.explosionFrame * 30}, 0, ${1 - state.explosionFrame * 0.2})`;
         ctx.beginPath();
@@ -278,14 +280,14 @@ function draw() {
         }
     }
 
-    // Score
+    // score
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'left';
-    ctx.fillText(`Score: ${state.score}`, 5, 15);
-    ctx.fillText(`High: ${state.highScore}`, 5, 30);
+    ctx.fillText(`score: ${state.score}`, 5, 15);
+    ctx.fillText(`high: ${state.highScore}`, 5, 30);
 
-    // Game over
+    // game over
     if (state.gameOver) {
         ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -296,15 +298,15 @@ function draw() {
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillText('game over', canvas.width / 2, canvas.height / 2 + 50);
         ctx.font = '16px Arial';
-        ctx.fillText(`Score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 75);
-        ctx.font = '12px Arial';
-        ctx.fillText('F5 zum Neustarten', canvas.width / 2, canvas.height / 2 + 95);
+        ctx.fillText(`score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 75);
+        ctx.font = '14px Arial';
+        ctx.fillText('click to restart', canvas.width / 2, canvas.height / 2 + 100);
     }
 }
 
-// Game over
+// game over
 function gameOver() {
     state.gameOver = true;
     if (state.score > state.highScore) {
@@ -313,7 +315,7 @@ function gameOver() {
     }
 }
 
-// Reset game
+// reset game
 function resetGame() {
     state.gameOver = false;
     state.exploding = false;
@@ -330,7 +332,7 @@ function resetGame() {
     for (let i = 0; i < 3; i++) spawnObstacle();
 }
 
-// Game loop
+// game loop
 function gameLoop() {
     update();
     draw();
