@@ -522,8 +522,8 @@ if (state.gameOver) {
   ctx.fillText(`score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 75);
   ctx.font = '14px Arial';
   ctx.fillText('click to restart', canvas.width / 2, canvas.height / 2 + 100);
+ }
 }
-
 
 function gameOver() {
   state.gameOver = true;
