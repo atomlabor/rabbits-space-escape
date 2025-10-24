@@ -293,16 +293,27 @@ function update() {
   player.velocityX *= 0.98;
   player.velocityY *= 0.98;
 
-  // Kollision Ränder
-  if (player.x <= 0 || player.x + player.width >= canvas.width ||
-      player.y <= 0 || player.y + player.height >= canvas.height) {
-    if (!state.exploding) {
-      state.exploding = true;
-      state.explosionFrame = 0;
-      explosionSound.play().catch(e => console.log('explosion blocked'));
-      setTimeout(gameOver, 500);
-    }
-  }
+// Kollision Ränder: leicht zurückdrücken statt explodieren
+if (player.x <= 0) {
+  player.x = 0;
+  player.velocityX = Math.abs(player.velocityX) * 0.6; // nach rechts stoßen, leicht dämpfen
+}
+
+if (player.x + player.width >= canvas.width) {
+  player.x = canvas.width - player.width;
+  player.velocityX = -Math.abs(player.velocityX) * 0.6; // nach links stoßen
+}
+
+if (player.y <= 0) {
+  player.y = 0;
+  player.velocityY = Math.abs(player.velocityY) * 0.6; // nach unten stoßen
+}
+
+if (player.y + player.height >= canvas.height) {
+  player.y = canvas.height - player.height;
+  player.velocityY = -Math.abs(player.velocityY) * 0.6; // nach oben stoßen
+}
+
 
   // Karotten einsammeln
   carrots.forEach((carrot, i) => {
