@@ -90,7 +90,7 @@ const player = {
   height: 20,
   velocityX: 0,
   velocityY: 0,
-  gravity: 0.15,
+  gravity: 0.55,
   thrust: -0.5,
   direction: 'right',
 };
