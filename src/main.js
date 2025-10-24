@@ -391,7 +391,7 @@ function draw() {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (splashImage.complete) {
-      const size = 150;
+      const size = 180;
       ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 10, size, size);
     }
     ctx.fillStyle = '#fff';
