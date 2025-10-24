@@ -28,6 +28,28 @@ if (getComputedStyle(wrapEl).position === 'static') wrapEl.style.position = 'rel
 wrapEl.appendChild(gameOverOverlay);
 
 
+// === Endvideo Overlay ===
+const endVideo = document.createElement('video');
+endVideo.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/end.mp4';
+endVideo.style.cssText = `
+  position:absolute;
+  top:0; left:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:none;
+  z-index:20;
+`;
+endVideo.muted = false;
+endVideo.controls = false;
+endVideo.playsInline = true;
+
+// Canvas-Wrapper sichern
+const wrapEl = canvas.parentElement || document.body;
+if (getComputedStyle(wrapEl).position === 'static') wrapEl.style.position = 'relative';
+wrapEl.appendChild(endVideo);
+
+
 // asset loading
 const shipLeft = new Image();
 shipLeft.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spaceship-left.png';
@@ -125,6 +147,8 @@ const state = {
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
   bgWarped: false,   // wurde der 2000er Warp schon ausgelöst?
   speedBoosted: false // wurde der 3000er Speed-Boost schon ausgelöst?
+  endTriggered: false, // wurde das Endvideo bereits gestartet?
+
 
 };
 
@@ -437,6 +461,36 @@ obstacles.forEach(obs => {
   }
 });
 
+// === Endvideo bei 10.000 Punkten ===
+if (!state.endTriggered && state.score >= 10000) {
+  state.endTriggered = true;
+  state.started = false; // Spiel pausieren
+
+  // Musik ausblenden
+  if (bgMusic) bgMusic.volume = 0.05;
+
+  // Canvas abdunkeln
+  ctx.fillStyle = 'rgba(0,0,0,0.9)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('YOU MADE IT!', canvas.width / 2, canvas.height / 2 - 30);
+  ctx.fillText('The End...', canvas.width / 2, canvas.height / 2);
+
+  // Video anzeigen und abspielen
+  endVideo.style.display = 'block';
+  endVideo.currentTime = 0;
+  endVideo.play().catch(() => {});
+
+  // optional: nach Ende des Videos zurück zum Startscreen
+  endVideo.onended = () => {
+    endVideo.style.display = 'none';
+    resetGame();
+    state.splashScreen = true;
+  };
+}
+   
 
   // Hindernisse bewegen & recyceln
   for (let i = obstacles.length - 1; i >= 0; i--) {
