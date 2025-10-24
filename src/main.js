@@ -20,6 +20,8 @@ const backgroundImage = new Image();
 backgroundImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/background.jpg';
 const gameOverImage = new Image();
 gameOverImage.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/spacecraft.gif';
+const spawnFlashes = [];
+
 
 // wall graphics
 const wallImage1 = new Image();
@@ -205,13 +207,21 @@ canvas.addEventListener('click', () => {
 
 // spawn carrot
 function spawnCarrot() {
-  carrots.push({
-    x: Math.random() * (canvas.width - 25),
-    y: Math.random() * (canvas.height - 25),
-    width: 25,
-    height: 25,
+  const x = Math.random() * (canvas.width - 25);
+  const y = Math.random() * (canvas.height - 25);
+
+  // Karotte hinzufügen
+  carrots.push({ x, y, width: 25, height: 25 });
+
+  // Mini-Lichtblitz hinzufügen
+  spawnFlashes.push({
+    x: x + 12.5,    // Mittelpunkt
+    y: y + 12.5,
+    radius: 2,
+    alpha: 1
   });
 }
+
 
 // spawn obstacle only off-screen right, then scroll left into view
 function spawnObstacle() {
@@ -248,6 +258,14 @@ for (let i = 0; i < 3; i++) spawnObstacle();
 function update() {
   if (state.splashScreen || state.gameOver) return;
 
+   // Blitze leicht wachsen und verblassen lassen
+for (let i = spawnFlashes.length - 1; i >= 0; i--) {
+  const f = spawnFlashes[i];
+  f.radius += 0.8;      // wächst
+  f.alpha -= 0.05;      // verblasst
+  if (f.alpha <= 0) spawnFlashes.splice(i, 1);
+}
+   
   // Hintergrund scrollen
   const scrollDirection = state.score >= 1000 ? -1 : 1;
   const bgWidth = backgroundImage.width || 1024;
@@ -388,6 +406,18 @@ function draw() {
 
   if (!state.started) return;
 
+// Spawning-Lichtblitze zeichnen
+spawnFlashes.forEach(f => {
+  const gradient = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.radius * 3);
+  gradient.addColorStop(0, `rgba(255,255,180,${f.alpha})`);
+  gradient.addColorStop(1, 'rgba(255,255,180,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, f.radius * 3, 0, Math.PI * 2);
+  ctx.fill();
+});
+
+   
   // Karotten
   carrots.forEach(carrot => {
     if (carrotImage.complete) {
