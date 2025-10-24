@@ -213,21 +213,32 @@ function spawnCarrot() {
   });
 }
 
-// spawn obstacle with wall graphic and horizontal scroll speed
+// spawn obstacle only off-screen right, then scroll left into view
 function spawnObstacle() {
-  const width = 20 + Math.random() * 30;
+  const width  = 20 + Math.random() * 30;
   const height = 20 + Math.random() * 30;
+
+  // y immer innerhalb des Spielfelds halten
+  const y = Math.random() * (canvas.height - height);
+
+  // nur rechts außerhalb spawnen
+  const offscreenPadding = 40 + Math.random() * 80; // Abstand außerhalb des Screens
+  const x = canvas.width + offscreenPadding;
+
   const walls = [wallImage1, wallImage2, wallImage3];
-  const wallImg = walls[Math.floor(Math.random() * 3)];
+  const wallImg = walls[Math.floor(Math.random() * walls.length)];
+
   obstacles.push({
-    x: Math.random() * (canvas.width - width),
-    y: Math.random() * (canvas.height - height),
+    x,
+    y,
     width,
     height,
-    wallImg: wallImg,
+    wallImg,
+    // nach links bewegen
     speedX: 0.3 + Math.random() * 0.7
   });
 }
+
 
 // initialize game objects
 for (let i = 0; i < 5; i++) spawnCarrot();
