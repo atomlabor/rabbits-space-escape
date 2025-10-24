@@ -2,32 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=240, initial-scale=1.0, user-scalable=no">
-    <title>rabbit's space escape</title>
+    <meta name="viewport" content="width=1024, initial-scale=1.0">
+    <title>Rabbit's Space Escape</title>
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        html, body {
-            width: 240px;
-            height: 282px;
             overflow: hidden;
             background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        #gameCanvas {
+        canvas {
             display: block;
-            width: 240px;
-            height: 282px;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
+            border: 1px solid #333;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="240" height="282"></canvas>
+    <canvas id="gameCanvas" width="1024" height="768"></canvas>
     <audio id="game-music" src="https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/rabbit_pixel_dust.mp3" loop preload="auto"></audio>
-    <script type="module" src="../src/main.js"></script>
+    <script src="src/main.js"></script>
 </body>
 </html>
