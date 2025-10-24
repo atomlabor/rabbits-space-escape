@@ -1,5 +1,5 @@
 /* rabbits space escape
-   optimized for rabbit r1 (240x282), scrolling background and walls */
+   optimized for rabbit r1 (240x282), scrolling background and walls, gyro control */
 
 // canvas setup
 const canvas = document.getElementById('gameCanvas');
@@ -43,6 +43,12 @@ const bgMusic = document.getElementById('game-music');
 const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
 
+// gyro control for rabbit r1
+let gyroTilt = 0;
+let keyboardTilt = 0;
+const MAX_TILT_DEGREE = 20;
+const GYRO_SENSITIVITY = 0.5;
+
 // game state
 const state = {
   splashScreen: true,
@@ -80,11 +86,42 @@ window.addEventListener('keydown', (e) => {
     state.started = true;
     bgMusic.play().catch(e => console.log('audio autoplay prevented'));
   }
+  
+  // keyboard tilt for desktop testing
+  if (e.key === 'ArrowLeft' || e.key === 'a') {
+    keyboardTilt = -1;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'd') {
+    keyboardTilt = 1;
+  }
 });
 
 window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
+  
+  // reset keyboard tilt
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ArrowRight' || e.key === 'd') {
+    keyboardTilt = 0;
+  }
 });
+
+// handle device orientation (gyroscope) for rabbit r1
+function handleGyro(event) {
+  if (state.splashScreen || state.gameOver) return;
+  
+  // gamma is left/right tilt (-90 to 90 degrees)
+  let gamma = event.gamma || 0;
+  
+  // clamp to max tilt degree
+  if (gamma < -MAX_TILT_DEGREE) {
+    gamma = -MAX_TILT_DEGREE;
+  } else if (gamma > MAX_TILT_DEGREE) {
+    gamma = MAX_TILT_DEGREE;
+  }
+  
+  // normalize to -1 to 1
+  gyroTilt = gamma / MAX_TILT_DEGREE;
+}
 
 // mouse/touch click for splash and restart
 canvas.addEventListener('click', () => {
@@ -137,22 +174,23 @@ function update() {
   // scroll background
   bgOffsetX = (bgOffsetX + bgScrollSpeed) % (backgroundImage.width || 1024);
 
-  // movement and direction change
+  // combined tilt from gyro and keyboard
+  const totalTilt = gyroTilt + keyboardTilt;
+  
+  // apply horizontal acceleration based on tilt
+  player.velocityX += totalTilt * GYRO_SENSITIVITY;
+  
+  // update direction based on velocity
   let directionChanged = false;
-  if (keys['ArrowLeft'] || keys['a']) {
-    player.velocityX -= 0.3;
-    if (player.direction !== 'left') {
-      player.direction = 'left';
-      directionChanged = true;
-    }
+  if (player.velocityX < -0.1 && player.direction !== 'left') {
+    player.direction = 'left';
+    directionChanged = true;
+  } else if (player.velocityX > 0.1 && player.direction !== 'right') {
+    player.direction = 'right';
+    directionChanged = true;
   }
-  if (keys['ArrowRight'] || keys['d']) {
-    player.velocityX += 0.3;
-    if (player.direction !== 'right') {
-      player.direction = 'right';
-      directionChanged = true;
-    }
-  }
+  
+  // keyboard thrust (up/space)
   if (keys['ArrowUp'] || keys['w'] || keys[' ']) {
     player.velocityY += player.thrust;
   }
@@ -323,6 +361,14 @@ function draw() {
     ctx.fillText('click to restart', canvas.width / 2, canvas.height / 2 + 100);
   }
 }
+
+// game over
+function gameOver() {
+  state.gameOver = true;
+  if (state.score > state.highScore) {
+    state.highScore = state.score;
+    localStorage.setItem('rse:highScore', Math.floor(state.highScore));
+  }
 
 // game over
 function gameOver() {
