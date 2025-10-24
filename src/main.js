@@ -101,7 +101,7 @@ const warpSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits
 // Lautstärken 
 bgMusic && (bgMusic.volume = 0.25);
 swooshSound.volume = 0.35;
-explosionSound.volume = 2.0;
+explosionSound.volume = 1.0;
 warpSound.volume = 0.8; // Warp angenehm laut
 
 // -------- Gyro-Konfiguration zweiachsig --------
@@ -144,7 +144,7 @@ const state = {
   highScore: Number(localStorage.getItem('rse:highScore') || 0),
   bgWarped: false,   // wurde der 2000er Warp schon ausgelöst?
   speedBoosted: false, // wurde der 3000er Speed-Boost schon ausgelöst?
-  endTriggered: false, // wurde das Endvideo bereits gestartet?
+  endTriggered: false // wurde das Endvideo bereits gestartet?
 
 
 };
