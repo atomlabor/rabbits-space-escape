@@ -1,11 +1,11 @@
 /* Rabbits Space Escape - Complete Game
-   Optimized for Rabbit R1 (1024x768), no placeholders */
+   Optimized for Rabbit R1 (240x282), scrolling background */
 
 // Canvas setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 1024;
-canvas.height = 768;
+canvas.width = 240;
+canvas.height = 282;
 
 // Asset loading
 const shipLeft = new Image();
@@ -29,6 +29,14 @@ wallImage2.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 const wallImage3 = new Image();
 wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/wall3.png';
 
+// Background scrolling
+let bgPattern = null;
+let bgOffsetX = 0;
+const bgScrollSpeed = 0.5;
+backgroundImage.onload = () => {
+    bgPattern = ctx.createPattern(backgroundImage, 'repeat');
+};
+
 // Sounds
 const bgMusic = document.getElementById('game-music');
 const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
@@ -49,8 +57,8 @@ const state = {
 const player = {
     x: canvas.width / 2 - 15,
     y: canvas.height / 2,
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
     velocityX: 0,
     velocityY: 0,
     gravity: 0.15,
@@ -89,17 +97,17 @@ canvas.addEventListener('click', () => {
 // Spawn carrot
 function spawnCarrot() {
     carrots.push({
-        x: Math.random() * (canvas.width - 20),
-        y: Math.random() * (canvas.height - 20),
-        width: 20,
-        height: 20,
+        x: Math.random() * (canvas.width - 15),
+        y: Math.random() * (canvas.height - 15),
+        width: 15,
+        height: 15,
     });
 }
 
 // Spawn obstacle with wall graphic
 function spawnObstacle() {
-    const width = 30 + Math.random() * 50;
-    const height = 30 + Math.random() * 50;
+    const width = 20 + Math.random() * 30;
+    const height = 20 + Math.random() * 30;
     const walls = [wallImage1, wallImage2, wallImage3];
     const wallImg = walls[Math.floor(Math.random() * 3)];
     obstacles.push({
@@ -118,6 +126,9 @@ for (let i = 0; i < 3; i++) spawnObstacle();
 // Update
 function update() {
     if (state.splashScreen || state.gameOver) return;
+
+    // Scroll background
+    bgOffsetX = (bgOffsetX + bgScrollSpeed) % (backgroundImage.width || 1024);
 
     // Movement and direction change
     let directionChanged = false;
@@ -197,8 +208,14 @@ function update() {
 
 // Draw
 function draw() {
-    // Background
-    if (backgroundImage.complete) {
+    // Scrolling background
+    if (bgPattern) {
+        ctx.save();
+        ctx.translate(-bgOffsetX, 0);
+        ctx.fillStyle = bgPattern;
+        ctx.fillRect(0, 0, canvas.width + backgroundImage.width, canvas.height);
+        ctx.restore();
+    } else if (backgroundImage.complete) {
         ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
     } else {
         ctx.fillStyle = '#000';
@@ -210,15 +227,15 @@ function draw() {
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         if (splashImage.complete) {
-            const size = 300;
-            ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 50, size, size);
+            const size = 150;
+            ctx.drawImage(splashImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 30, size, size);
         }
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 48px Arial';
+        ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText("Rabbit's Space Escape", canvas.width / 2, canvas.height / 2 + 200);
-        ctx.font = '24px Arial';
-        ctx.fillText('Klick oder Leertaste zum Starten', canvas.width / 2, canvas.height / 2 + 250);
+        ctx.fillText("Rabbit's Space Escape", canvas.width / 2, canvas.height / 2 + 80);
+        ctx.font = '12px Arial';
+        ctx.fillText('Klick oder Leertaste', canvas.width / 2, canvas.height / 2 + 100);
         return;
     }
 
@@ -246,10 +263,9 @@ function draw() {
 
     // Player or explosion
     if (state.exploding) {
-        // Simple explosion effect
         ctx.fillStyle = `rgba(255, ${100 + state.explosionFrame * 30}, 0, ${1 - state.explosionFrame * 0.2})`;
         ctx.beginPath();
-        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 20 + state.explosionFrame * 10, 0, Math.PI * 2);
+        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 10 + state.explosionFrame * 5, 0, Math.PI * 2);
         ctx.fill();
         state.explosionFrame++;
     } else {
@@ -264,27 +280,27 @@ function draw() {
 
     // Score
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px Arial';
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'left';
-    ctx.fillText(`Score: ${state.score}`, 20, 40);
-    ctx.fillText(`High: ${state.highScore}`, 20, 70);
+    ctx.fillText(`Score: ${state.score}`, 5, 15);
+    ctx.fillText(`High: ${state.highScore}`, 5, 30);
 
     // Game over
     if (state.gameOver) {
         ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         if (gameOverImage.complete) {
-            const size = 200;
-            ctx.drawImage(gameOverImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 80, size, size);
+            const size = 80;
+            ctx.drawImage(gameOverImage, canvas.width / 2 - size / 2, canvas.height / 2 - size / 2 - 40, size, size);
         }
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 48px Arial';
+        ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 + 100);
-        ctx.font = '32px Arial';
-        ctx.fillText(`Score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 150);
-        ctx.font = '24px Arial';
-        ctx.fillText('F5 zum Neustarten', canvas.width / 2, canvas.height / 2 + 200);
+        ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.font = '16px Arial';
+        ctx.fillText(`Score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 75);
+        ctx.font = '12px Arial';
+        ctx.fillText('F5 zum Neustarten', canvas.width / 2, canvas.height / 2 + 95);
     }
 }
 
