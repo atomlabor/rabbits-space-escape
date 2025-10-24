@@ -370,14 +370,7 @@ function gameOver() {
     localStorage.setItem('rse:highScore', Math.floor(state.highScore));
   }
 
-// game over
-function gameOver() {
-  state.gameOver = true;
-  if (state.score > state.highScore) {
-    state.highScore = state.score;
-    localStorage.setItem('rse:highScore', Math.floor(state.highScore));
-  }
-}
+
 
 // reset game
 function resetGame() {
@@ -404,5 +397,8 @@ function gameLoop() {
   draw();
   requestAnimationFrame(gameLoop);
 }
+
+// gyroscope event listener for rabbit r1 hardware
+window.addEventListener('deviceorientation', handleGyro, true);
 
 gameLoop();
