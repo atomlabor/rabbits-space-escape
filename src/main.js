@@ -96,12 +96,12 @@ const warpFX = { active: false, alpha: 0 };
 const bgMusic = document.getElementById('game-music');
 const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/swoosh.mp3');
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
-const warpSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/warp.mp3'); // neu
+const warpSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/warp.mp3'); 
 
 // Lautstärken 
 bgMusic && (bgMusic.volume = 0.25);
 swooshSound.volume = 0.35;
-explosionSound.volume = 1.0;
+explosionSound.volume = 2.0;
 warpSound.volume = 0.8; // Warp angenehm laut
 
 // -------- Gyro-Konfiguration zweiachsig --------
