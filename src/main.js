@@ -32,7 +32,7 @@ wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 // background scrolling
 let bgPattern = null;
 let bgOffsetX = 0;
-const bgScrollSpeed = 0.5;
+const bgScrollSpeed = 0.15;
 backgroundImage.onload = () => {
   bgPattern = ctx.createPattern(backgroundImage, 'repeat');
 };
@@ -43,7 +43,7 @@ const swooshSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbi
 const explosionSound = new Audio('https://raw.githubusercontent.com/atomlabor/rabbits-space-escape/main/assets/explosion.mp3');
 
 // -------- Gyro-Konfiguration zweiachsig --------
-const MAX_TILT_DEGREE = 20;         // sinnvoller Neigungsbereich pro Achse
+const MAX_TILT_DEGREE = 10;         // sinnvoller Neigungsbereich pro Achse
 let   DEADZONE = 0.06;              // kleine Wackler filtern
 let   SMOOTHING = 0.15;             // 0..1, höher reagiert schneller
 const GYRO_SENSITIVITY_X = 0.18;    // Einfluss auf horizontale Beschleunigung
@@ -90,7 +90,7 @@ const player = {
   height: 30,
   velocityX: 0,
   velocityY: 0,
-  gravity: 0.10,
+  gravity: 0.15,
   thrust: -0.5,
   direction: 'right',
 };
