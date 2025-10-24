@@ -358,7 +358,7 @@ function draw() {
     ctx.fillText('click to start', canvas.width / 2, canvas.height / 2 + 110);
     // kleine Debug-Info am Splash
     ctx.font = '10px monospace';
-    ctx.fillText('kippe leicht und klicke', canvas.width / 2, canvas.height / 2 + 126);
+    ctx.fillText('atomlabor.de', canvas.width / 2, canvas.height / 2 + 126);
     return;
   }
 
