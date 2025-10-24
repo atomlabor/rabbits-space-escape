@@ -34,10 +34,13 @@ wallImage3.src = 'https://raw.githubusercontent.com/atomlabor/rabbits-space-esca
 // background scrolling
 let bgPattern = null;
 let bgOffsetX = 0;
+let bgOffsetY = 0;          // neu
 const bgScrollSpeed = 0.15;
+
 backgroundImage.onload = () => {
   bgPattern = ctx.createPattern(backgroundImage, 'repeat');
 };
+
 
 // sounds
 const bgMusic = document.getElementById('game-music');
@@ -266,10 +269,18 @@ for (let i = spawnFlashes.length - 1; i >= 0; i--) {
   if (f.alpha <= 0) spawnFlashes.splice(i, 1);
 }
    
-  // Hintergrund scrollen
-  const scrollDirection = state.score >= 1000 ? -1 : 1;
-  const bgWidth = backgroundImage.width || 1024;
-  bgOffsetX = ((bgOffsetX + bgScrollSpeed * scrollDirection) % bgWidth + bgWidth) % bgWidth;
+// Hintergrund scrollen | leichter Parallax-Drift
+const bgWidth  = backgroundImage.width  || 1024;
+const bgHeight = backgroundImage.height || 1024;
+
+// sanfte Richtungsänderung über Zeit
+const t = performance.now();
+const scrollDirX = Math.sin(t / 800);   // horizontaler Drift
+const scrollDirY = Math.cos(t / 1000);  // vertikaler Drift
+
+bgOffsetX = ((bgOffsetX + bgScrollSpeed * scrollDirX) % bgWidth  + bgWidth)  % bgWidth;
+bgOffsetY = ((bgOffsetY + bgScrollSpeed * scrollDirY) % bgHeight + bgHeight) % bgHeight;
+
 
   // Kombinierter horizontaler Tilt
   const combinedTiltX = clamp(gyro.x + keyboardTilt, 1);
@@ -372,19 +383,27 @@ if (player.y + player.height >= canvas.height) {
 
 // draw
 function draw() {
-  // Hintergrund
-  if (bgPattern) {
-    ctx.save();
-    ctx.translate(-bgOffsetX, 0);
-    ctx.fillStyle = bgPattern;
-    ctx.fillRect(0, 0, canvas.width + backgroundImage.width, canvas.height);
-    ctx.restore();
-  } else if (backgroundImage.complete) {
-    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
-  } else {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
+// Hintergrund
+if (bgPattern) {
+  const bgWidth  = backgroundImage.width  || 1024;
+  const bgHeight = backgroundImage.height || 1024;
+
+  ctx.save();
+  // Offsets anwenden
+  ctx.translate(-bgOffsetX, -bgOffsetY);
+  ctx.fillStyle = bgPattern;
+
+  // größer als Canvas zeichnen, damit das komplette Image sauber kachelt
+  // und keine Ränder sichtbar werden
+  ctx.fillRect(0, 0, canvas.width + bgWidth, canvas.height + bgHeight);
+  ctx.restore();
+} else if (backgroundImage.complete) {
+  ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+} else {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 
   // Splash
   if (state.splashScreen) {
